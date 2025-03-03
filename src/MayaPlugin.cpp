@@ -8,7 +8,7 @@ MStatus initializePlugin(MObject obj) {
     MStatus status;
     MFnPlugin plugin(obj, "MyPlugin", "1.0", "Any");
 
-    status = plugin.registerCommand("generate", BoundingProxy::creator);
+    status = plugin.registerCommand("BoundingProxyCmd", BoundingProxy::creator);
     if (!status) {
         status.perror("registerCommand");
         return status;
