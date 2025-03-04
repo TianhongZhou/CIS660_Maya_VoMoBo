@@ -6,7 +6,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(GeneratePluginUI, self).__init__(parent)
         self.setWindowTitle("Generate Plugin")
-        self.setGeometry(100, 100, 250, 300)
+        self.setGeometry(100, 100, 270, 300)
         self.selected_object = None
         self.init_ui()
 
