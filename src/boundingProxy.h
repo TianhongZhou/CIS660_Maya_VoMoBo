@@ -13,10 +13,10 @@
 #include <vector>
 using namespace std;
 
+constexpr double EPSILON = 1e-6;
+
 class BoundingProxy : public MPxCommand {
 public:
-    double EPSILON = 1e-6;
-
     MDagPath meshPath;
     MFnMesh* meshFn;
     vector<vector<vector<bool>>> G;

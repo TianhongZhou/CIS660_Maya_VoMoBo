@@ -45,7 +45,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 }
 
 int BoundingProxy::World2Voxel(double w, double min, double max, int res) {
-    int result = (w - min) / (max - min) * (res - 1);
+    int result = (int) ((w - min) / (max - min) * (res - 1));
     result = std::max(result, 0);
     result = std::min(result, res - 1);
     return result;
@@ -85,27 +85,22 @@ void BoundingProxy::Voxelization(int res) {
     deltaP = MPoint((maxX - minX) / res, (maxY - minY) / res, (maxZ - minZ) / res);
 
     // Iterate through all triangles
-    for (int i = 0; i < triangleIndices.length(); i += 3) {
+    for (unsigned int i = 0; i < triangleIndices.length(); i += 3) {
         MPoint v0 = vertices[triangleIndices[i]];
         MPoint v1 = vertices[triangleIndices[i + 1]];
         MPoint v2 = vertices[triangleIndices[i + 2]];
 
         // Convert to voxel space
-        int x0 = World2Voxel(v0.x, minX, maxX, res);
         int y0 = World2Voxel(v0.y, minY, maxY, res);
         int z0 = World2Voxel(v0.z, minZ, maxZ, res);
 
-        int x1 = World2Voxel(v1.x, minX, maxX, res);
         int y1 = World2Voxel(v1.y, minY, maxY, res);
         int z1 = World2Voxel(v1.z, minZ, maxZ, res);
 
-        int x2 = World2Voxel(v2.x, minX, maxX, res);
         int y2 = World2Voxel(v2.y, minY, maxY, res);
         int z2 = World2Voxel(v2.z, minZ, maxZ, res);
 
         // Compute bounding box in voxel space
-        int minX_vox = std::min({x0, x1, x2});
-        int maxX_vox = std::max({x0, x1, x2});
         int minY_vox = std::min({y0, y1, y2});
         int maxY_vox = std::max({y0, y1, y2});
         int minZ_vox = std::min({z0, z1, z2});
@@ -126,7 +121,7 @@ void BoundingProxy::Voxelization(int res) {
 
                 // Flip all voxels beyond the intersection
                 for (int x = xIntersectVox; x < res; x++) {
-                    G[x][y][z] = !G[x][y][z];  // XOR toggle
+                    G[x][y][z] = !G[x][y][z];
                 }
             }
         }
@@ -154,7 +149,7 @@ double BoundingProxy::IntersectTriangleX(MPoint v0, MPoint v1, MPoint v2, double
     double d_ei_yz = -n_ei_yz * v0;
 
     // Solve for x: x = (-D - By - Cz) / A
-    if (fabs(n_ei_yz.x) < 1e-6) return std::numeric_limits<double>::max();
+    if (fabs(n_ei_yz.x) < EPSILON) return std::numeric_limits<double>::max();
 
     return (-d_ei_yz - n_ei_yz.y * y - n_ei_yz.z * z) / n_ei_yz.x;
 }
@@ -173,6 +168,7 @@ MStatus BoundingProxy::SelectMesh() {
 
     delete meshFn;
     meshFn = new MFnMesh(meshPath);
+    return MS::kSuccess;
 }
 
 void BoundingProxy::ShowVoxel(int res) {
