@@ -31,11 +31,11 @@ public:
     void Voxelization(int res);
     int World2Voxel(double w, double min, double max, int res);
     double Voxel2World(int v, double min, double max, int res);
-    bool TriangleBoxOverlap(MPoint voxel, MPoint v0, MPoint v1, MPoint v2);
     MVector CrossProduct(MVector a, MVector b);
-    bool PlaneBoxOverlap(MPoint p, MVector n, MPoint v0);
-    bool ProjectionBoxOverlap(int axis1, int axis2, int axis3, vector<MPoint> v, MVector n, MPoint p);
     void ShowVoxel(int res);
+    bool InsideTriangleYZ(MPoint v0, MPoint v1, MPoint v2, double y, double z);
+    double IntersectTriangleX(MPoint v0, MPoint v1, MPoint v2, double y, double z);
+    double EdgeFunction(MPoint a, MPoint b, MVector p);
 };
 
 #endif // BOUNDING_PROXY_H

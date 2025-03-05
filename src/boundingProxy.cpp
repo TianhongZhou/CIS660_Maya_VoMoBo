@@ -63,79 +63,6 @@ MVector BoundingProxy::CrossProduct(MVector a, MVector b) {
     );
 }
 
-bool BoundingProxy::PlaneBoxOverlap(MPoint p, MVector n, MPoint v0) {
-    // Get critical point c
-    MPoint c;
-    c.x = n.x > 0 ? deltaP.x : 0;
-    c.y = n.y > 0 ? deltaP.y : 0;
-    c.z = n.z > 0 ? deltaP.z : 0;
-
-    // Determin T's plane overlaps B
-    double np = n * p;
-    double d1 = n * (c - v0);
-    double d2 = n * (deltaP - c - v0);
-
-    return (np + d1) * (np + d2) <= 0;
-}
-
-bool BoundingProxy::ProjectionBoxOverlap(int axis1, int axis2, int axis3, vector<MPoint> v, MVector n, MPoint p) {
-    // Verify that T's aabb overlap B
-    double triMinA = std::min({v[0][axis1], v[1][axis1] , v[2][axis1]});
-    double triMaxA = std::max({v[0][axis1], v[1][axis1] , v[2][axis1]});
-    double triMinB = std::min({v[0][axis2], v[1][axis2] , v[2][axis2]});
-    double triMaxB = std::max({v[0][axis2], v[1][axis2] , v[2][axis2]});
-
-    double boxMinA = p[axis1];
-    double boxMaxA = p[axis1] + deltaP[axis1];
-    double boxMinB = p[axis2];
-    double boxMaxB = p[axis2] + deltaP[axis2];
-
-    if (triMaxA < boxMinA || triMinA > boxMaxA ||
-        triMaxB < boxMinB || triMinB > boxMaxB) {
-        return false;
-    }
-
-    // And_{i=0}^2(dot(n_{e_i}^{ab}, p_{ab}) + d_{e_i}^{ab} >=0)
-    for (int i = 0; i < 3; i++) {
-        // e_i
-        MVector ei = v[(i + 1) % 3] - v[i];
-
-        // n_{e_i}^{xy}
-        MVector n_ei = MVector(-ei[axis2], ei[axis1]);
-        n_ei *= n[axis3] >= 0 ? 1 : -1;
-
-        // p_{ab}
-        MPoint p_ab = MPoint(p[axis1], p[axis2]);
-
-        // d_{e_i}^{ab}
-        MPoint vi_ab = MPoint(v[i][axis1], v[i][axis2]);
-        double d_ei = -1 * n_ei * vi_ab + 
-                        std::max(0.0, deltaP[axis1] * n_ei[0]) + 
-                        std::max(0.0, deltaP[axis2] * n_ei[1]);
-
-        if (n_ei * p_ab + d_ei < 0) {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool BoundingProxy::TriangleBoxOverlap(MPoint voxel, MPoint v0, MPoint v1, MPoint v2) {
-    // Get normal n of triangle T
-    MVector e0 = v1 - v0;
-    MVector e1 = v2 - v1;
-    MVector e2 = v0 - v2;
-
-    MVector n = CrossProduct(e0, e1);
-    n.normalize();
-
-    vector<MPoint> v = {v0, v1, v2};
-    return (PlaneBoxOverlap(voxel, n, v0) &&
-            ProjectionBoxOverlap(0, 1, 2, v, n, voxel) &&
-            ProjectionBoxOverlap(1, 2, 0, v, n, voxel) &&
-            ProjectionBoxOverlap(2, 0, 1, v, n, voxel));
-}
-
 // Method based-on "Fast Parallel Surface and Solid Voxelization on GPUs" (Schwarz, Seidel)
 void BoundingProxy::Voxelization(int res) {
     // Initialize voxels G
@@ -184,26 +111,52 @@ void BoundingProxy::Voxelization(int res) {
         int minZ_vox = std::min({z0, z1, z2});
         int maxZ_vox = std::max({z0, z1, z2});
 
-        // Iterate over all voxels in this bounding box
-        for (int x = minX_vox; x <= maxX_vox; x++) {
-            for (int y = minY_vox; y <= maxY_vox; y++) {
-                for (int z = minZ_vox; z <= maxZ_vox; z++) {
-                    // Convert voxel center to world space
-                    double vx = Voxel2World(x, minX, maxX, res);
-                    double vy = Voxel2World(y, minY, maxY, res);
-                    double vz = Voxel2World(z, minZ, maxZ, res);
+        // Iterate over yz voxel columns
+        for (int y = minY_vox; y <= maxY_vox; y++) {
+            for (int z = minZ_vox; z <= maxZ_vox; z++) {
+                double vy = Voxel2World(y, minY, maxY, res);
+                double vz = Voxel2World(z, minZ, maxZ, res);
 
-                    MPoint voxelMinCorner(vx, vy, vz);
+                // Check if voxel column is inside the triangle projection
+                if (!InsideTriangleYZ(v0, v1, v2, vy, vz)) continue;
 
-                    // Perform triangle/box overlap test
-                    bool voxelStatus = TriangleBoxOverlap(voxelMinCorner, v0, v1, v2);
-                    if (voxelStatus) {
-                        G[x][y][z] = true;
-                    }
+                // Compute intersection with triangle plane
+                double xIntersect = IntersectTriangleX(v0, v1, v2, vy, vz);
+                int xIntersectVox = World2Voxel(xIntersect, minX, maxX, res);
+
+                // Flip all voxels beyond the intersection
+                for (int x = xIntersectVox; x < res; x++) {
+                    G[x][y][z] = !G[x][y][z];  // XOR toggle
                 }
             }
         }
     }
+}
+
+double BoundingProxy::EdgeFunction(MPoint a, MPoint b, MVector p) {
+    return (p.x - a.y) * (b.z - a.z) - (p.y - a.z) * (b.y - a.y);
+};
+
+bool BoundingProxy::InsideTriangleYZ(MPoint v0, MPoint v1, MPoint v2, double y, double z) {
+    MVector p(y, z);
+
+    // Compute signed area tests (edge function tests)
+    double w0 = EdgeFunction(v0, v1, p);
+    double w1 = EdgeFunction(v1, v2, p);
+    double w2 = EdgeFunction(v2, v0, p);
+
+    return (w0 >= 0 && w1 >= 0 && w2 >= 0) || (w0 <= 0 && w1 <= 0 && w2 <= 0);
+}
+
+double BoundingProxy::IntersectTriangleX(MPoint v0, MPoint v1, MPoint v2, double y, double z) {
+    // Triangle plane equation: Ax + By + Cz + D = 0
+    MVector n_ei_yz = CrossProduct(v1 - v0, v2 - v0);
+    double d_ei_yz = -n_ei_yz * v0;
+
+    // Solve for x: x = (-D - By - Cz) / A
+    if (fabs(n_ei_yz.x) < 1e-6) return std::numeric_limits<double>::max();
+
+    return (-d_ei_yz - n_ei_yz.y * y - n_ei_yz.z * z) / n_ei_yz.x;
 }
 
 MStatus BoundingProxy::SelectMesh() {
