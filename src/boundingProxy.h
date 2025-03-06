@@ -28,7 +28,7 @@ public:
     static void* creator();
     MStatus doIt(const MArgList&) override;
     MStatus SelectMesh();
-    void Voxelization(int res);
+    void VoxelizationCPU(int res);
     int World2Voxel(double w, double min, double max, int res);
     double Voxel2World(int v, double min, double max, int res);
     MVector CrossProduct(MVector a, MVector b);

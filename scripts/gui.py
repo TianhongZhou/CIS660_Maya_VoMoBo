@@ -24,11 +24,12 @@ class GeneratePluginUI(QtWidgets.QWidget):
 
         # Voxelization
         layout.addWidget(QtWidgets.QLabel("Voxelization"))
-        self.resolution_spinbox = QtWidgets.QSpinBox()
-        self.resolution_spinbox.setRange(1, 2048)
-        self.resolution_spinbox.setValue(512)
+        self.resolution_dropdown = QtWidgets.QComboBox()
+        self.resolution_values = [8, 16, 32, 64, 128, 256, 512, 1024, 2048]
+        self.resolution_dropdown.addItems(map(str, self.resolution_values))
+        self.resolution_dropdown.setCurrentText("16")
         layout.addWidget(QtWidgets.QLabel("Resolution:"))
-        layout.addWidget(self.resolution_spinbox)
+        layout.addWidget(self.resolution_dropdown)
 
         # Morphological
         layout.addWidget(QtWidgets.QLabel("Morphological"))
@@ -65,13 +66,37 @@ class GeneratePluginUI(QtWidgets.QWidget):
         layout.addWidget(self.decrease_radio)
         layout.addWidget(self.erase_radio)
 
-        # Buttons for Actions
+        # Button Reset Scale
         self.scale_field_button = QtWidgets.QPushButton("Reset Scale Field")
         self.scale_field_button.clicked.connect(self.scale_field_action)
 
+        # CPU/GPU Selection
+        layout.addWidget(QtWidgets.QLabel("Processing Mode:"))
+        self.processing_mode_group = QtWidgets.QButtonGroup(self)
+        self.cpu_radio = QtWidgets.QRadioButton("CPU")
+        self.gpu_radio = QtWidgets.QRadioButton("GPU")
+        self.cpu_radio.setChecked(True)  # Default to CPU
+        self.processing_mode_group.addButton(self.cpu_radio)
+        self.processing_mode_group.addButton(self.gpu_radio)
+        layout.addWidget(self.cpu_radio)
+        layout.addWidget(self.gpu_radio)
+
+        # Button Show Voxel
         self.voxel_button = QtWidgets.QPushButton("Show Voxel")
         self.voxel_button.clicked.connect(self.voxel_action)
 
+        # Dilation Shape Selection
+        layout.addWidget(QtWidgets.QLabel("Dilation Shape:"))
+        self.dilation_shape_group = QtWidgets.QButtonGroup(self)
+        self.sphere_radio = QtWidgets.QRadioButton("Sphere SE")
+        self.cube_radio = QtWidgets.QRadioButton("Cube SE")
+        self.cube_radio.setChecked(True)
+        self.dilation_shape_group.addButton(self.sphere_radio)
+        self.dilation_shape_group.addButton(self.cube_radio)
+        layout.addWidget(self.sphere_radio)
+        layout.addWidget(self.cube_radio)
+
+        # Button Generate
         self.generate_button = QtWidgets.QPushButton("Generate")
         self.generate_button.clicked.connect(self.generate_action)
 
@@ -106,14 +131,16 @@ class GeneratePluginUI(QtWidgets.QWidget):
     def voxel_action(self):
         if not self.check_selection():
             return
-        resolution = self.resolution_spinbox.value()
-        cmds.evalDeferred(f'cmds.BoundingProxyCmd("show_voxel", {resolution})')
+        resolution = int(self.resolution_dropdown.currentText())
+        mode = "cpu" if self.cpu_radio.isChecked() else "gpu"
+        cmds.evalDeferred(f'cmds.BoundingProxyCmd("show_voxel", {resolution}, "{mode}")')
 
     def generate_action(self):
         if not self.check_selection():
             return
-        resolution = self.resolution_spinbox.value()
-        cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution})')
+        resolution = int(self.resolution_dropdown.currentText())
+        mode = "cpu" if self.cpu_radio.isChecked() else "gpu"
+        cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}")')
 
 def show():
     global generate_plugin_ui
