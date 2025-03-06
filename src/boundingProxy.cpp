@@ -20,20 +20,32 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 
     MString command = args.asString(0);
 
-    if (command == "generate") {
+    if (command == "scale_field") {
+        // beta version
+    } 
+    else if (command == "generate") {
         int resolution = args.asInt(1);
         SelectMesh();
-        Voxelization(resolution);
-        // closing
-        // meshing
-    }
-    else if (command == "scale_field") {
-        // beta version
+
+        if (args.asString(2) == "cpu") {
+            VoxelizationCPU(resolution);
+            // closing
+            // meshing
+        }
+        else {
+            // TODO: GPU voxel
+        }
     }
     else if (command == "show_voxel") {
         int resolution = args.asInt(1);
         SelectMesh();
-        Voxelization(resolution);
+
+        if (args.asString(2) == "cpu") {
+            VoxelizationCPU(resolution);
+        }
+        else {
+            // TODO: GPU voxel
+        }
         ShowVoxel(resolution);
     }
     else {
@@ -64,7 +76,7 @@ MVector BoundingProxy::CrossProduct(MVector a, MVector b) {
 }
 
 // Method based-on "Fast Parallel Surface and Solid Voxelization on GPUs" (Schwarz, Seidel)
-void BoundingProxy::Voxelization(int res) {
+void BoundingProxy::VoxelizationCPU(int res) {
     // Initialize voxels G
     G = vector<vector<vector<bool>>>(res, vector<vector<bool>>(res, vector<bool>(res, false)));
 
