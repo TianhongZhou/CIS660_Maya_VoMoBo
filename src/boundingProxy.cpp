@@ -24,16 +24,19 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         // beta version
     } 
     else if (command == "generate") {
+        ClearAll();
+
         int resolution = args.asInt(1);
         SelectMesh();
 
         if (args.asString(2) == "cpu") {
             VoxelizationCPU(resolution);
+            MipMapCPU();
             // closing
             // meshing
         }
         else {
-            // TODO: GPU voxel
+            // TODO: GPU
         }
     }
     else if (command == "show_voxel") {
@@ -42,11 +45,12 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 
         if (args.asString(2) == "cpu") {
             VoxelizationCPU(resolution);
+            MipMapCPU();
         }
         else {
-            // TODO: GPU voxel
+            // TODO: GPU
         }
-        ShowVoxel(resolution);
+        ShowVoxel();
     }
     else {
         MGlobal::displayWarning("Unknown command argument!");
@@ -54,6 +58,53 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     }
 
     return MS::kSuccess;
+}
+
+void BoundingProxy::ClearAll() {
+    meshPath = MDagPath();
+    
+    delete meshFn;
+    meshFn = nullptr;
+
+    G.clear();
+
+    deltaP = MVector();
+}
+
+// for all p in Ni^3, Gi[p] = max_t G^{i - 1}[2p + t];
+vector<vector<vector<bool>>> BoundingProxy::CalculateGi(vector<vector<vector<bool>>> Gi_1, vector<vector<int>> t) {
+    int Ni_1 = (int) Gi_1.size();
+    int Ni = Ni_1 / 2;
+
+    vector<vector<vector<bool>>> Gi = vector<vector<vector<bool>>>(Ni, vector<vector<bool>>(Ni, vector<bool>(Ni, false)));
+    for (int px = 0; px < Ni; px++) {
+        for (int py = 0; py < Ni; py++) {
+            for (int pz = 0; pz < Ni; pz++) {
+                for (int i = 0; i < t.size(); i++) {
+                    vector<int> ti = t[i];
+                    // When value is 0,1 max is the same as or
+                    Gi[px][py][pz] = Gi[px][py][pz] || Gi_1[2 * px + ti[0]][2 * py + ti[1]][2 * pz + ti[2]];
+                }
+            }
+        }
+    }
+    return Gi;
+}
+
+// Build pyramid G_hat = {Gi} with Gi : N_i^3 -> {0,1}, and Ni = N0 / 2^i
+void BoundingProxy::MipMapCPU() {
+    int N0 = (int) G.size();
+    int iMax = (int) log2(N0);
+    // G0[p] = G[p] 
+    GHat[0] = G;
+
+    // t in {0,1}^3
+    vector<vector<int>> t = {{0,0,0}, {0,0,1}, {0,1,0}, {1,0,0},
+                             {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
+    
+    for (int i = 1; i <= iMax; i++) {
+        GHat[i] = CalculateGi(GHat[i - 1], t);
+    }
 }
 
 int BoundingProxy::World2Voxel(double w, double min, double max, int res) {
@@ -183,7 +234,8 @@ MStatus BoundingProxy::SelectMesh() {
     return MS::kSuccess;
 }
 
-void BoundingProxy::ShowVoxel(int res) {
+void BoundingProxy::ShowVoxel() {
+    int res = (int) GHat[0].size();
     MString deleteOldVoxels = "if (`objExists voxelGroup`) { delete voxelGroup; } group -n voxelGroup;";
     MGlobal::executeCommand(deleteOldVoxels);
 
@@ -192,7 +244,7 @@ void BoundingProxy::ShowVoxel(int res) {
     for (int x = 0; x < res; x++) {
         for (int y = 0; y < res; y++) {
             for (int z = 0; z < res; z++) {
-                if (G[x][y][z]) {
+                if (GHat[0][x][y][z]) {
                     // Compute world space position of voxel
                     double px = x * deltaP.x;
                     double py = y * deltaP.y;
