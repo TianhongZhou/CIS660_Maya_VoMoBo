@@ -81,6 +81,7 @@ void BoundingProxy::ClearAll() {
     GHat.clear();
 
     D.clear();
+    DHalf.clear();
 }
 
 vector<MPoint> BoundingProxy::ExtractConnectedContour(vector<vector<vector<bool>>> grid) {
@@ -117,13 +118,13 @@ void BoundingProxy::EntireDilationCPU(MString SE, double baseScale) {
 
     // Calculate D1/2
     int NiHalf = (int) GHat[1].size();
-    vector<vector<vector<bool>>> DHalf(NiHalf, vector<vector<bool>>(NiHalf, vector<bool>(NiHalf, false)));
+    DHalf = vector<vector<vector<bool>>>(NiHalf, vector<vector<bool>>(NiHalf, vector<bool>(NiHalf, false)));
     DilationCPU(SE, baseScale, GHat[1], DHalf);
 
     // Calculate DSparse
     vector<MPoint> DHalfContour = ExtractConnectedContour(DHalf);
 
-    vector<vector<vector<bool>>> DSparse(Ni, vector<vector<bool>>(Ni, vector<bool>(Ni, false)));
+    D = vector<vector<vector<bool>>>(Ni, vector<vector<bool>>(Ni, vector<bool>(Ni, false)));
     for (int i = 0; i < DHalfContour.size(); i++) {
         MPoint DSparsePoint = DHalfContour[i] * 2;
         vector<MPoint> r = {{0,0,0}, {0,0,1}, {0,1,0}, {1,0,0},
@@ -131,12 +132,11 @@ void BoundingProxy::EntireDilationCPU(MString SE, double baseScale) {
         for (int j = 0; j < r.size(); j++) {
             MPoint p = DSparsePoint + r[j];
             if (p.x < Ni && p.y < Ni && p.z < Ni) {
-                DSparse[(int) p.x][(int) p.y][(int) p.z] = true;
+                D[(int) p.x][(int) p.y][(int) p.z] = true;
             }
         }
     }
-    DilationCPU(SE, baseScale, G, DSparse);
-    D = DSparse;
+    DilationCPU(SE, baseScale, G, D);
 }
 
 // Algorithm 1 - Parallel spatially varying dilation
