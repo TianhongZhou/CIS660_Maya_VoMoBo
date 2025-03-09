@@ -1,13 +1,23 @@
 from PySide6 import QtWidgets, QtCore
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
+from shiboken6 import wrapInstance
+
+def get_maya_main_window():
+    main_window_ptr = omui.MQtUtil.mainWindow()
+    if main_window_ptr:
+        return wrapInstance(int(main_window_ptr), QtWidgets.QMainWindow)
+    return None
 
 class GeneratePluginUI(QtWidgets.QWidget):
     def __init__(self, parent=None):
-        super(GeneratePluginUI, self).__init__(parent)
+        maya_main_window = get_maya_main_window()
+        super(GeneratePluginUI, self).__init__(maya_main_window if maya_main_window else parent)
+
         self.setWindowTitle("Generate Plugin")
         self.setGeometry(100, 100, 270, 300)
         self.selected_object = None
+        self.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
         self.init_ui()
 
     def init_ui(self):
@@ -33,9 +43,11 @@ class GeneratePluginUI(QtWidgets.QWidget):
 
         # Morphological
         layout.addWidget(QtWidgets.QLabel("Morphological"))
-        self.base_scale_spinbox = QtWidgets.QSpinBox()
-        self.base_scale_spinbox.setRange(1, 10)
-        self.base_scale_spinbox.setValue(1)
+        self.base_scale_spinbox = QtWidgets.QDoubleSpinBox()
+        self.base_scale_spinbox.setRange(0.1, 10.0)
+        self.base_scale_spinbox.setValue(2.0)
+        self.base_scale_spinbox.setDecimals(2)
+        self.base_scale_spinbox.setSingleStep(0.1)
         layout.addWidget(QtWidgets.QLabel("Base Scale:"))
         layout.addWidget(self.base_scale_spinbox)
 
@@ -68,7 +80,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
 
         # Button Reset Scale
         self.scale_field_button = QtWidgets.QPushButton("Reset Scale Field")
-        self.scale_field_button.clicked.connect(self.scale_field_action)
+        self.scale_field_button.clicked.connect(self.reset_scale_field_action)
 
         # CPU/GPU Selection
         layout.addWidget(QtWidgets.QLabel("Processing Mode:"))
@@ -123,24 +135,28 @@ class GeneratePluginUI(QtWidgets.QWidget):
             return False
         return True
 
-    def scale_field_action(self):
+    def reset_scale_field_action(self):
         if not self.check_selection():
             return
-        cmds.evalDeferred('cmds.BoundingProxyCmd("scale_field")')
+        cmds.evalDeferred('cmds.BoundingProxyCmd("reset_scale_field")')
 
     def voxel_action(self):
         if not self.check_selection():
             return
         resolution = int(self.resolution_dropdown.currentText())
         mode = "cpu" if self.cpu_radio.isChecked() else "gpu"
-        cmds.evalDeferred(f'cmds.BoundingProxyCmd("show_voxel", {resolution}, "{mode}")')
+        seMode = "cube" if self.cube_radio.isChecked() else "sphere"
+        baseScale = self.base_scale_spinbox.value()
+        cmds.evalDeferred(f'cmds.BoundingProxyCmd("show_voxel", {resolution}, "{mode}", "{seMode}", {baseScale})')
 
     def generate_action(self):
         if not self.check_selection():
             return
         resolution = int(self.resolution_dropdown.currentText())
         mode = "cpu" if self.cpu_radio.isChecked() else "gpu"
-        cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}")')
+        seMode = "cube" if self.cube_radio.isChecked() else "sphere"
+        baseScale = self.base_scale_spinbox.value()
+        cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}", "{seMode}, {baseScale}")')
 
 def show():
     global generate_plugin_ui
