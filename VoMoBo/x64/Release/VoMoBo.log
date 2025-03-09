@@ -1,7 +1,8 @@
-﻿  boundingProxy.cpp
+﻿  MayaPlugin.cpp
+  boundingProxy.cpp
      Creating library F:\document\University\CIS 660\Project\VoMoBo\x64\Release\VoMoBo.lib and object F:\document\University\CIS 660\Project\VoMoBo\x64\Release\VoMoBo.exp
   Generating code
-  0 of 729 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+  2 of 938 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
     0 functions had inline decision re-evaluated but remain unchanged
   Finished generating code

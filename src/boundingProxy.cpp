@@ -1,7 +1,7 @@
 #include "boundingProxy.h"
 
 BoundingProxy::BoundingProxy() 
-    : meshFn(nullptr)
+    : meshFn(nullptr), editedS(false)
 {};
 
 BoundingProxy::~BoundingProxy() { 
@@ -20,19 +20,22 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 
     MString command = args.asString(0);
 
-    if (command == "scale_field") {
-        // beta version
+    if (command == "reset_scale_field") {
+        ResetScaleField();
     } 
     else if (command == "generate") {
         ClearAll();
 
         int resolution = args.asInt(1);
+        MString SE = args.asString(3);
+        double baseScale = args.asDouble(4);
         SelectMesh();
 
         if (args.asString(2) == "cpu") {
             VoxelizationCPU(resolution);
             MipMapCPU();
             // closing
+            EntireDilationCPU(SE, baseScale);
             // meshing
         }
         else {
@@ -40,17 +43,22 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         }
     }
     else if (command == "show_voxel") {
+        ClearAll();
+
         int resolution = args.asInt(1);
+        MString SE = args.asString(3);
+        double baseScale = args.asDouble(4);
         SelectMesh();
 
         if (args.asString(2) == "cpu") {
             VoxelizationCPU(resolution);
             MipMapCPU();
+            EntireDilationCPU(SE, baseScale);
         }
         else {
             // TODO: GPU
         }
-        ShowVoxel();
+        ShowVoxel(D);
     }
     else {
         MGlobal::displayWarning("Unknown command argument!");
@@ -69,10 +77,162 @@ void BoundingProxy::ClearAll() {
     G.clear();
 
     deltaP = MVector();
+
+    GHat.clear();
+
+    D.clear();
+}
+
+vector<MPoint> BoundingProxy::ExtractConnectedContour(vector<vector<vector<bool>>> grid) {
+    int N = (int) grid.size();
+    vector<MPoint> r = {{0,0,1}, {0,1,0}, {1,0,0}, {0,0,-1}, {0,-1,0}, {-1,0,0}};
+    vector<MPoint> result;
+
+    for (int x = 1; x < N - 1; x++) {
+        for (int y = 1; y < N - 1; y++) {
+            for (int z = 1; z < N - 1; z++) {
+                if (grid[x][y][z]) {
+                    for (int i = 0; i < r.size(); i++) {
+                        MPoint p = MPoint(x, y, z) + r[i];
+                        if (!grid[(int) p.x][(int) p.y][(int) p.z]) {
+                            result.push_back(MPoint(x, y, z));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+void BoundingProxy::EntireDilationCPU(MString SE, double baseScale) {
+    int Ni = (int) G.size();
+
+    if (!editedS) {
+        // Initialize S if haven't
+        S = vector<vector<vector<double>>>(Ni, vector<vector<double>>(Ni, vector<double>(Ni, baseScale)));
+    }
+
+    // Calculate D1/2
+    int NiHalf = (int) GHat[1].size();
+    vector<vector<vector<bool>>> DHalf(NiHalf, vector<vector<bool>>(NiHalf, vector<bool>(NiHalf, false)));
+    DilationCPU(SE, baseScale, GHat[1], DHalf);
+
+    // Calculate DSparse
+    vector<MPoint> DHalfContour = ExtractConnectedContour(DHalf);
+
+    vector<vector<vector<bool>>> DSparse(Ni, vector<vector<bool>>(Ni, vector<bool>(Ni, false)));
+    for (int i = 0; i < DHalfContour.size(); i++) {
+        MPoint DSparsePoint = DHalfContour[i] * 2;
+        vector<MPoint> r = {{0,0,0}, {0,0,1}, {0,1,0}, {1,0,0},
+                            {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
+        for (int j = 0; j < r.size(); j++) {
+            MPoint p = DSparsePoint + r[j];
+            if (p.x < Ni && p.y < Ni && p.z < Ni) {
+                DSparse[(int) p.x][(int) p.y][(int) p.z] = true;
+            }
+        }
+    }
+    DilationCPU(SE, baseScale, G, DSparse);
+    D = DSparse;
+}
+
+// Algorithm 1 - Parallel spatially varying dilation
+void BoundingProxy::DilationCPU(MString SE, double baseScale, vector<vector<vector<bool>>> Gi, vector<vector<vector<bool>>>& Di) {
+    int Ni = (int) Gi.size();
+    int iMax = (int) log2(Ni);
+
+    // r in {0,1}^3
+    vector<MPoint> r = {{0,0,0}, {0,0,1}, {0,1,0}, {1,0,0},
+                        {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
+
+    // D <- G
+    Di = Gi;
+
+    for (int px = 0; px < Ni; px++) {
+        for (int py = 0; py < Ni; py++) {
+            for (int pz = 0; pz < Ni; pz++) {
+                // for all voxel p | D[p] = 0 do
+                if (Di[px][py][pz]) {
+                    continue;
+                }
+
+                // T <- (iMax, 0)
+                stack<pair<int, MPoint>> T;
+                T.push(pair<int, MPoint>(iMax, MPoint(0, 0, 0)));
+
+                // while T not empty and D[p] != 1 do
+                while (!T.empty() && !Di[px][py][pz]) {
+                    // v = (i, q) <- peek of T
+                    pair<int, MPoint> v = T.top();
+                    int i = v.first;
+                    MPoint q = v.second;
+
+                    // T <- T \ v
+                    T.pop();
+
+                    if (i == 0) {
+                        // D[p] <- 1
+                        Di[px][py][pz] = true;
+                    }
+                    else {
+                        // for all sub-cell vr = (i - 1, 2q + r) of v do
+                        for (int k = 0; k < r.size(); k++) {
+                            // vr = (i - 1, 2q + r)
+                            pair<int, MPoint> vr = pair<int, MPoint>(i - 1, 2 * q + r[k]);
+
+                            // Bs(p) N vr_spatial
+                            // v = (i, q) => v_spatial = {q + y, y in [0, 2^i]^3}
+                            double twoi = pow(2, vr.first);
+                            MPoint vrSpatialMin = vr.second;
+                            MPoint vrSpatialMax = vr.second + MPoint(twoi, twoi, twoi);
+                            
+                            bool intersect = false;
+                            double Sp = S[px][py][pz];
+                            MPoint p = MPoint(px, py, pz);
+                            if (SE == "cube") {
+                                // AABB collision test for two cubes
+                                // Bs(p) = {p + y, y in [-S[p], S[p]]^3}
+                                MPoint BspMin = p - MPoint(Sp, Sp, Sp);
+                                MPoint BspMax = p + MPoint(Sp, Sp, Sp);
+
+                                intersect = vrSpatialMax.x >= BspMin.x && vrSpatialMin.x <= BspMax.x &&
+                                            vrSpatialMax.y >= BspMin.y && vrSpatialMin.y <= BspMax.y &&
+                                            vrSpatialMax.z >= BspMin.z && vrSpatialMin.z <= BspMax.z;
+                            }
+                            else {
+                                // Cube and sphere collision
+                                // Bs(p) = {p + y, ||y|| < S[p]}
+                                double closestx = max(vrSpatialMin.x, min(p.x, vrSpatialMax.x));
+                                double closesty = max(vrSpatialMin.y, min(p.y, vrSpatialMax.y));
+                                double closestz = max(vrSpatialMin.z, min(p.z, vrSpatialMax.z));
+
+                                double dSquare = pow(p.x - closestx, 2) + pow(p.y - closesty, 2) + pow(p.z - closestz, 2);
+                                intersect = dSquare <= Sp * Sp;
+                            }
+
+                            // if Bs(p) N vr_spatial != empty and GHat[vr] = 1
+                            if (intersect && GHat[vr.first][(int) vr.second.x][(int) vr.second.y][(int) vr.second.z] == 1) {
+                                // T <- T U vr
+                                T.push(vr);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void BoundingProxy::ResetScaleField() {
+    editedS = false;
+    S.clear();
 }
 
 // for all p in Ni^3, Gi[p] = max_t G^{i - 1}[2p + t];
-vector<vector<vector<bool>>> BoundingProxy::CalculateGi(vector<vector<vector<bool>>> Gi_1, vector<vector<int>> t) {
+vector<vector<vector<bool>>> BoundingProxy::CalculateGi(vector<vector<vector<bool>>> Gi_1, vector<MPoint> t) {
     int Ni_1 = (int) Gi_1.size();
     int Ni = Ni_1 / 2;
 
@@ -81,9 +241,11 @@ vector<vector<vector<bool>>> BoundingProxy::CalculateGi(vector<vector<vector<boo
         for (int py = 0; py < Ni; py++) {
             for (int pz = 0; pz < Ni; pz++) {
                 for (int i = 0; i < t.size(); i++) {
-                    vector<int> ti = t[i];
+                    MPoint ti = t[i];
+                    MPoint p = MPoint(px, py, pz);
                     // When value is 0,1 max is the same as or
-                    Gi[px][py][pz] = Gi[px][py][pz] || Gi_1[2 * px + ti[0]][2 * py + ti[1]][2 * pz + ti[2]];
+                    MPoint p2t = 2 * p + ti;
+                    Gi[px][py][pz] = Gi[px][py][pz] || Gi_1[(int) p2t.x][(int) p2t.y][(int) p2t.z];
                 }
             }
         }
@@ -99,8 +261,8 @@ void BoundingProxy::MipMapCPU() {
     GHat[0] = G;
 
     // t in {0,1}^3
-    vector<vector<int>> t = {{0,0,0}, {0,0,1}, {0,1,0}, {1,0,0},
-                             {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
+    vector<MPoint> t = {{0,0,0}, {0,0,1}, {0,1,0}, {1,0,0},
+                        {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
     
     for (int i = 1; i <= iMax; i++) {
         GHat[i] = CalculateGi(GHat[i - 1], t);
@@ -229,13 +391,22 @@ MStatus BoundingProxy::SelectMesh() {
         return MS::kFailure;
     }
 
+    MDagPath transformPath = meshPath;
+    transformPath.pop();
+
+    MFnTransform transformFn(transformPath);
+    MString transformName = transformFn.name();
+
+    MString freezeCommand = "makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1 " + transformName + ";";
+    MGlobal::executeCommand(freezeCommand);
+
     delete meshFn;
     meshFn = new MFnMesh(meshPath);
     return MS::kSuccess;
 }
 
-void BoundingProxy::ShowVoxel() {
-    int res = (int) GHat[0].size();
+void BoundingProxy::ShowVoxel(vector<vector<vector<bool>>> grid) {
+    int res = (int) grid.size();
     MString deleteOldVoxels = "if (`objExists voxelGroup`) { delete voxelGroup; } group -n voxelGroup;";
     MGlobal::executeCommand(deleteOldVoxels);
 
@@ -244,7 +415,7 @@ void BoundingProxy::ShowVoxel() {
     for (int x = 0; x < res; x++) {
         for (int y = 0; y < res; y++) {
             for (int z = 0; z < res; z++) {
-                if (GHat[0][x][y][z]) {
+                if (grid[x][y][z]) {
                     // Compute world space position of voxel
                     double px = x * deltaP.x;
                     double py = y * deltaP.y;
