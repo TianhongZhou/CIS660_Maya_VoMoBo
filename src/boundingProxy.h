@@ -27,6 +27,7 @@ public:
     MVector deltaP;
     unordered_map<int, vector<vector<vector<bool>>>> GHat;
     vector<vector<vector<bool>>> D;
+    vector<vector<vector<bool>>> DHalf;
     vector<vector<vector<double>>> S;
     bool editedS;
 

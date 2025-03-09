@@ -17,7 +17,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.setWindowTitle("Generate Plugin")
         self.setGeometry(100, 100, 270, 300)
         self.selected_object = None
-        self.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.Dialog)
         self.init_ui()
 
     def init_ui(self):
