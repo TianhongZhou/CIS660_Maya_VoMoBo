@@ -23,11 +23,11 @@ class BoundingProxy : public MPxCommand {
 public:
     MDagPath meshPath;
     MFnMesh* meshFn;
+    MString meshName;
     vector<vector<vector<bool>>> G;
     MVector deltaP;
     unordered_map<int, vector<vector<vector<bool>>>> GHat;
     vector<vector<vector<bool>>> D;
-    vector<vector<vector<bool>>> DHalf;
     vector<vector<vector<double>>> S;
     bool editedS;
 
@@ -45,12 +45,10 @@ public:
     bool InsideTriangleYZ(MPoint v0, MPoint v1, MPoint v2, double y, double z);
     double IntersectTriangleX(MPoint v0, MPoint v1, MPoint v2, double y, double z);
     double EdgeFunction(MPoint a, MPoint b, MVector p);
-    void ClearAll();
     void MipMapCPU();
     vector<vector<vector<bool>>> CalculateGi(vector<vector<vector<bool>>> Gi_1, vector<MPoint> t);
     void ResetScaleField();
-    void DilationCPU(MString SE, double baseScale, vector<vector<vector<bool>>> Gi, vector<vector<vector<bool>>>& Di);
-    void EntireDilationCPU(MString SE, double baseScale);
+    void DilationCPU(MString SE, double baseScale);
     vector<MPoint> ExtractConnectedContour(vector<vector<vector<bool>>> grid);
 };
 
