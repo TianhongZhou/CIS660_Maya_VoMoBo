@@ -20,6 +20,8 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.setWindowFlags(QtCore.Qt.Dialog)
         self.init_ui()
 
+        self.action_executed = False
+
     def init_ui(self):
         layout = QtWidgets.QVBoxLayout()
 
@@ -118,12 +120,26 @@ class GeneratePluginUI(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
+        self.resolution_dropdown.currentIndexChanged.connect(self.auto_action)
+        self.base_scale_spinbox.valueChanged.connect(self.auto_action)
+        self.cpu_radio.toggled.connect(self.auto_action)
+        self.gpu_radio.toggled.connect(self.auto_action)
+        self.scale_field_button.clicked.connect(self.auto_action)
+        self.sphere_radio.toggled.connect(self.auto_action)
+        self.cube_radio.toggled.connect(self.auto_action)
+
+    def auto_action(self):
+        """if action_executed is true, call action again"""
+        if self.action_executed:
+            self.voxel_action()
+
     def select_object(self):
         """Gets the currently selected object in Maya and updates the label."""
         selection = cmds.ls(selection=True)
         if selection:
             self.selected_object = selection[0]
             self.selected_object_label.setText(f"Selected Object: {self.selected_object}")
+            self.mesh_selected = True
         else:
             self.selected_object = None
             self.selected_object_label.setText("Selected Object: None")
@@ -147,7 +163,8 @@ class GeneratePluginUI(QtWidgets.QWidget):
         mode = "cpu" if self.cpu_radio.isChecked() else "gpu"
         seMode = "cube" if self.cube_radio.isChecked() else "sphere"
         baseScale = self.base_scale_spinbox.value()
-        cmds.evalDeferred(f'cmds.BoundingProxyCmd("show_voxel", {resolution}, "{mode}", "{seMode}", {baseScale})')
+        self.action_executed = True
+        cmds.evalDeferred(f'cmds.BoundingProxyCmd("show_voxel", {resolution}, "{mode}", "{seMode}", {baseScale}, "{self.selected_object}")')
 
     def generate_action(self):
         if not self.check_selection():
@@ -156,7 +173,8 @@ class GeneratePluginUI(QtWidgets.QWidget):
         mode = "cpu" if self.cpu_radio.isChecked() else "gpu"
         seMode = "cube" if self.cube_radio.isChecked() else "sphere"
         baseScale = self.base_scale_spinbox.value()
-        cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}", "{seMode}, {baseScale}")')
+        self.action_executed = True
+        cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}", "{seMode}, {baseScale}, "{self.selected_object}")')
 
 def show():
     global generate_plugin_ui

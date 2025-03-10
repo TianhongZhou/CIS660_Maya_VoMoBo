@@ -24,18 +24,18 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         ResetScaleField();
     } 
     else if (command == "generate") {
-        ClearAll();
-
         int resolution = args.asInt(1);
         MString SE = args.asString(3);
         double baseScale = args.asDouble(4);
+        meshName = args.asString(5);
+
         SelectMesh();
 
         if (args.asString(2) == "cpu") {
             VoxelizationCPU(resolution);
             MipMapCPU();
             // closing
-            EntireDilationCPU(SE, baseScale);
+            DilationCPU(SE, baseScale);
             // meshing
         }
         else {
@@ -43,17 +43,17 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         }
     }
     else if (command == "show_voxel") {
-        ClearAll();
-
         int resolution = args.asInt(1);
         MString SE = args.asString(3);
         double baseScale = args.asDouble(4);
+        meshName = args.asString(5);
+
         SelectMesh();
 
         if (args.asString(2) == "cpu") {
             VoxelizationCPU(resolution);
             MipMapCPU();
-            EntireDilationCPU(SE, baseScale);
+            DilationCPU(SE, baseScale);
         }
         else {
             // TODO: GPU
@@ -66,22 +66,6 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     }
 
     return MS::kSuccess;
-}
-
-void BoundingProxy::ClearAll() {
-    meshPath = MDagPath();
-    
-    delete meshFn;
-    meshFn = nullptr;
-
-    G.clear();
-
-    deltaP = MVector();
-
-    GHat.clear();
-
-    D.clear();
-    DHalf.clear();
 }
 
 vector<MPoint> BoundingProxy::ExtractConnectedContour(vector<vector<vector<bool>>> grid) {
@@ -108,40 +92,14 @@ vector<MPoint> BoundingProxy::ExtractConnectedContour(vector<vector<vector<bool>
     return result;
 }
 
-void BoundingProxy::EntireDilationCPU(MString SE, double baseScale) {
-    int Ni = (int) G.size();
-
+// Algorithm 1 - Parallel spatially varying dilation
+void BoundingProxy::DilationCPU(MString SE, double baseScale) {
+    int Ni = (int) GHat[0].size();
     if (!editedS) {
         // Initialize S if haven't
         S = vector<vector<vector<double>>>(Ni, vector<vector<double>>(Ni, vector<double>(Ni, baseScale)));
     }
 
-    // Calculate D1/2
-    int NiHalf = (int) GHat[1].size();
-    DHalf = vector<vector<vector<bool>>>(NiHalf, vector<vector<bool>>(NiHalf, vector<bool>(NiHalf, false)));
-    DilationCPU(SE, baseScale, GHat[1], DHalf);
-
-    // Calculate DSparse
-    vector<MPoint> DHalfContour = ExtractConnectedContour(DHalf);
-
-    D = vector<vector<vector<bool>>>(Ni, vector<vector<bool>>(Ni, vector<bool>(Ni, false)));
-    for (int i = 0; i < DHalfContour.size(); i++) {
-        MPoint DSparsePoint = DHalfContour[i] * 2;
-        vector<MPoint> r = {{0,0,0}, {0,0,1}, {0,1,0}, {1,0,0},
-                            {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
-        for (int j = 0; j < r.size(); j++) {
-            MPoint p = DSparsePoint + r[j];
-            if (p.x < Ni && p.y < Ni && p.z < Ni) {
-                D[(int) p.x][(int) p.y][(int) p.z] = true;
-            }
-        }
-    }
-    DilationCPU(SE, baseScale, G, D);
-}
-
-// Algorithm 1 - Parallel spatially varying dilation
-void BoundingProxy::DilationCPU(MString SE, double baseScale, vector<vector<vector<bool>>> Gi, vector<vector<vector<bool>>>& Di) {
-    int Ni = (int) Gi.size();
     int iMax = (int) log2(Ni);
 
     // r in {0,1}^3
@@ -149,13 +107,13 @@ void BoundingProxy::DilationCPU(MString SE, double baseScale, vector<vector<vect
                         {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
 
     // D <- G
-    Di = Gi;
+    D = GHat[0];
 
     for (int px = 0; px < Ni; px++) {
         for (int py = 0; py < Ni; py++) {
             for (int pz = 0; pz < Ni; pz++) {
                 // for all voxel p | D[p] = 0 do
-                if (Di[px][py][pz]) {
+                if (D[px][py][pz]) {
                     continue;
                 }
 
@@ -164,7 +122,7 @@ void BoundingProxy::DilationCPU(MString SE, double baseScale, vector<vector<vect
                 T.push(pair<int, MPoint>(iMax, MPoint(0, 0, 0)));
 
                 // while T not empty and D[p] != 1 do
-                while (!T.empty() && !Di[px][py][pz]) {
+                while (!T.empty() && !D[px][py][pz]) {
                     // v = (i, q) <- peek of T
                     pair<int, MPoint> v = T.top();
                     int i = v.first;
@@ -175,7 +133,7 @@ void BoundingProxy::DilationCPU(MString SE, double baseScale, vector<vector<vect
 
                     if (i == 0) {
                         // D[p] <- 1
-                        Di[px][py][pz] = true;
+                        D[px][py][pz] = true;
                     }
                     else {
                         // for all sub-cell vr = (i - 1, 2q + r) of v do
@@ -381,9 +339,8 @@ double BoundingProxy::IntersectTriangleX(MPoint v0, MPoint v1, MPoint v2, double
 
 MStatus BoundingProxy::SelectMesh() {
     MSelectionList selection;
-    MGlobal::getActiveSelectionList(selection);
+    MStatus status = selection.add(meshName);
 
-    MStatus status;
     status = selection.getDagPath(0, meshPath);
 
     if (!meshPath.hasFn(MFn::kMesh)) {
@@ -395,9 +352,9 @@ MStatus BoundingProxy::SelectMesh() {
     transformPath.pop();
 
     MFnTransform transformFn(transformPath);
-    MString transformName = transformFn.name();
+    meshName = transformFn.name();
 
-    MString freezeCommand = "makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1 " + transformName + ";";
+    MString freezeCommand = "makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1 " + meshName + ";";
     MGlobal::executeCommand(freezeCommand);
 
     delete meshFn;
@@ -407,8 +364,12 @@ MStatus BoundingProxy::SelectMesh() {
 
 void BoundingProxy::ShowVoxel(vector<vector<vector<bool>>> grid) {
     int res = (int) grid.size();
-    MString deleteOldVoxels = "if (`objExists voxelGroup`) { delete voxelGroup; } group -n voxelGroup;";
-    MGlobal::executeCommand(deleteOldVoxels);
+    MString deleteGroupCmd =
+        "if (`objExists voxelGroup`) { "
+        "delete voxelGroup; "
+        "} "
+        "group -empty -name voxelGroup;";
+    MGlobal::executeCommand(deleteGroupCmd);
 
     int voxelCount = 0;
 
