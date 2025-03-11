@@ -28,7 +28,9 @@ public:
     MVector deltaP;
     unordered_map<int, vector<vector<vector<bool>>>> GHat;
     vector<vector<vector<bool>>> D;
+    vector<vector<vector<bool>>> Dc;
     vector<vector<vector<double>>> S;
+    unordered_map<int, pair<vector<vector<vector<bool>>>, vector<vector<vector<double>>>>> DcHat;
     bool editedS;
 
     BoundingProxy();
@@ -45,11 +47,13 @@ public:
     bool InsideTriangleYZ(MPoint v0, MPoint v1, MPoint v2, double y, double z);
     double IntersectTriangleX(MPoint v0, MPoint v1, MPoint v2, double y, double z);
     double EdgeFunction(MPoint a, MPoint b, MVector p);
-    void MipMapCPU();
-    vector<vector<vector<bool>>> CalculateGi(vector<vector<vector<bool>>> Gi_1, vector<MPoint> t);
+    void PyramidGCPU();
     void ResetScaleField();
     void DilationCPU(MString SE, double baseScale);
-    vector<MPoint> ExtractConnectedContour(vector<vector<vector<bool>>> grid);
+    void ConnectedContourCPU();
+    void ScaleAugmentedPyramidCPU();
+    template <typename T, typename CombineOp>
+    vector<vector<vector<T>>> CalculatePyramid(vector<vector<vector<T>>> prev, vector<MPoint> t, CombineOp combine);
 };
 
 #endif // BOUNDING_PROXY_H

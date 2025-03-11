@@ -46,7 +46,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         # Morphological
         layout.addWidget(QtWidgets.QLabel("Morphological"))
         self.base_scale_spinbox = QtWidgets.QDoubleSpinBox()
-        self.base_scale_spinbox.setRange(0.1, 10.0)
+        self.base_scale_spinbox.setRange(0.1, 30.0)
         self.base_scale_spinbox.setValue(2.0)
         self.base_scale_spinbox.setDecimals(2)
         self.base_scale_spinbox.setSingleStep(0.1)
@@ -60,9 +60,16 @@ class GeneratePluginUI(QtWidgets.QWidget):
         # Brush Size Slider
         layout.addWidget(QtWidgets.QLabel("Brush Size:"))
         self.brush_size_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.brush_size_slider.setRange(1, 10)
-        self.brush_size_slider.setValue(5)
+        self.brush_size_slider.setRange(1, 2048)
+        self.brush_size_slider.setValue(10)
         layout.addWidget(self.brush_size_slider)
+
+        # Brush Step Slider
+        layout.addWidget(QtWidgets.QLabel("Brush Step:"))
+        self.brush_step_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.brush_step_slider.setRange(1, 30)
+        self.brush_step_slider.setValue(2)
+        layout.addWidget(self.brush_step_slider)
 
         # Brush Mode (Radio Buttons)
         layout.addWidget(QtWidgets.QLabel("Brush Mode:"))
@@ -121,7 +128,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.setLayout(layout)
 
         self.resolution_dropdown.currentIndexChanged.connect(self.auto_action)
-        self.base_scale_spinbox.valueChanged.connect(self.auto_action)
+        # self.base_scale_spinbox.valueChanged.connect(self.auto_action)
         self.cpu_radio.toggled.connect(self.auto_action)
         self.gpu_radio.toggled.connect(self.auto_action)
         self.scale_field_button.clicked.connect(self.auto_action)
