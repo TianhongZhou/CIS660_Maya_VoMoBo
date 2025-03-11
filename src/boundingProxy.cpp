@@ -33,9 +33,11 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 
         if (args.asString(2) == "cpu") {
             VoxelizationCPU(resolution);
-            MipMapCPU();
+            PyramidGCPU();
             // closing
             DilationCPU(SE, baseScale);
+            ConnectedContourCPU();
+            ScaleAugmentedPyramidCPU();
             // meshing
         }
         else {
@@ -52,13 +54,16 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 
         if (args.asString(2) == "cpu") {
             VoxelizationCPU(resolution);
-            MipMapCPU();
+            PyramidGCPU();
             DilationCPU(SE, baseScale);
+            ConnectedContourCPU();
+            ScaleAugmentedPyramidCPU();
         }
         else {
             // TODO: GPU
         }
-        ShowVoxel(D);
+        // Can show G, GHat[i], D, Dc, DcHat[i].first
+        ShowVoxel(DcHat[0].first);
     }
     else {
         MGlobal::displayWarning("Unknown command argument!");
@@ -68,28 +73,50 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     return MS::kSuccess;
 }
 
-vector<MPoint> BoundingProxy::ExtractConnectedContour(vector<vector<vector<bool>>> grid) {
-    int N = (int) grid.size();
+// Build a scale-augmented pyramid DcHat = {Dc^i} with Dc^i : N_i^3 -> {0,1} x R
+void BoundingProxy::ScaleAugmentedPyramidCPU() {
+    int N0 = (int) Dc.size();
+    int iMax = (int) log2(N0);
+    // Dc0[p] = (Dc[p], S[p]) 
+    DcHat[0].first = Dc;
+    DcHat[0].second = S;
+
+    // t in {0,1}^3
+    vector<MPoint> t = {{0,0,0}, {0,0,1}, {0,1,0}, {1,0,0},
+                        {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
+
+    for (int i = 1; i <= iMax; i++) {
+        DcHat[i].first = CalculatePyramid(DcHat[i - 1].first, t, [](bool a, bool b) {return a || b;});
+        DcHat[i].second = CalculatePyramid(DcHat[i - 1].second, t, [](double a, double b) {return max(a, b);});
+    }
+}
+
+// Compute Dc from D using 6-connected contour
+void BoundingProxy::ConnectedContourCPU() {
+    int N = (int) D.size();
     vector<MPoint> r = {{0,0,1}, {0,1,0}, {1,0,0}, {0,0,-1}, {0,-1,0}, {-1,0,0}};
-    vector<MPoint> result;
+    Dc = D;
 
     for (int x = 1; x < N - 1; x++) {
         for (int y = 1; y < N - 1; y++) {
             for (int z = 1; z < N - 1; z++) {
-                if (grid[x][y][z]) {
+                if (D[x][y][z]) {
+                    bool flag = true;
                     for (int i = 0; i < r.size(); i++) {
                         MPoint p = MPoint(x, y, z) + r[i];
-                        if (!grid[(int) p.x][(int) p.y][(int) p.z]) {
-                            result.push_back(MPoint(x, y, z));
+                        if (!D[(int) p.x][(int) p.y][(int) p.z]) {
+                            Dc[x][y][z] = true;
+                            flag = false;
                             break;
                         }
+                    }
+                    if (flag) {
+                        Dc[x][y][z] = false;
                     }
                 }
             }
         }
     }
-
-    return result;
 }
 
 // Algorithm 1 - Parallel spatially varying dilation
@@ -143,9 +170,10 @@ void BoundingProxy::DilationCPU(MString SE, double baseScale) {
 
                             // Bs(p) N vr_spatial
                             // v = (i, q) => v_spatial = {q + y, y in [0, 2^i]^3}
+                            // Need to convert q from Gi space to G0 space before collision test
                             double twoi = pow(2, vr.first);
-                            MPoint vrSpatialMin = vr.second;
-                            MPoint vrSpatialMax = vr.second + MPoint(twoi, twoi, twoi);
+                            MPoint vrSpatialMin = vr.second * twoi;
+                            MPoint vrSpatialMax = vrSpatialMin + MPoint(twoi, twoi, twoi);
                             
                             bool intersect = false;
                             double Sp = S[px][py][pz];
@@ -190,29 +218,32 @@ void BoundingProxy::ResetScaleField() {
 }
 
 // for all p in Ni^3, Gi[p] = max_t G^{i - 1}[2p + t];
-vector<vector<vector<bool>>> BoundingProxy::CalculateGi(vector<vector<vector<bool>>> Gi_1, vector<MPoint> t) {
-    int Ni_1 = (int) Gi_1.size();
+// for all p in Ni^3, Dci[p] = max_t Dc^{i - 1}[2p + t];
+template <typename T, typename CombineOp>
+vector<vector<vector<T>>> BoundingProxy::CalculatePyramid(vector<vector<vector<T>>> prev, vector<MPoint> t, CombineOp combine) {
+    int Ni_1 = (int) prev.size();
     int Ni = Ni_1 / 2;
 
-    vector<vector<vector<bool>>> Gi = vector<vector<vector<bool>>>(Ni, vector<vector<bool>>(Ni, vector<bool>(Ni, false)));
+    vector<vector<vector<T>>> curr(Ni, vector<vector<T>>(Ni, vector<T>(Ni, T{})));
+
     for (int px = 0; px < Ni; px++) {
         for (int py = 0; py < Ni; py++) {
             for (int pz = 0; pz < Ni; pz++) {
                 for (int i = 0; i < t.size(); i++) {
                     MPoint ti = t[i];
                     MPoint p = MPoint(px, py, pz);
-                    // When value is 0,1 max is the same as or
                     MPoint p2t = 2 * p + ti;
-                    Gi[px][py][pz] = Gi[px][py][pz] || Gi_1[(int) p2t.x][(int) p2t.y][(int) p2t.z];
+
+                    curr[px][py][pz] = combine(curr[px][py][pz], prev[(int) p2t.x][(int) p2t.y][(int) p2t.z]);
                 }
             }
         }
     }
-    return Gi;
+    return curr;
 }
 
 // Build pyramid G_hat = {Gi} with Gi : N_i^3 -> {0,1}, and Ni = N0 / 2^i
-void BoundingProxy::MipMapCPU() {
+void BoundingProxy::PyramidGCPU() {
     int N0 = (int) G.size();
     int iMax = (int) log2(N0);
     // G0[p] = G[p] 
@@ -223,7 +254,7 @@ void BoundingProxy::MipMapCPU() {
                         {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
     
     for (int i = 1; i <= iMax; i++) {
-        GHat[i] = CalculateGi(GHat[i - 1], t);
+        GHat[i] = CalculatePyramid(GHat[i - 1], t, [](bool a, bool b) {return a || b;});
     }
 }
 
