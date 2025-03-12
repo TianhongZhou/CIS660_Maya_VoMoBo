@@ -46,7 +46,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         # Morphological
         layout.addWidget(QtWidgets.QLabel("Morphological"))
         self.base_scale_spinbox = QtWidgets.QDoubleSpinBox()
-        self.base_scale_spinbox.setRange(0.1, 30.0)
+        self.base_scale_spinbox.setRange(0.1, 99.9)
         self.base_scale_spinbox.setValue(2.0)
         self.base_scale_spinbox.setDecimals(2)
         self.base_scale_spinbox.setSingleStep(0.1)

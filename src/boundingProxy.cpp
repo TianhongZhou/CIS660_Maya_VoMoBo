@@ -1,7 +1,7 @@
 #include "boundingProxy.h"
 
 BoundingProxy::BoundingProxy() 
-    : meshFn(nullptr), editedS(false)
+    : meshFn(nullptr), editedS(false), voxelCount(0)
 {};
 
 BoundingProxy::~BoundingProxy() { 
@@ -34,10 +34,11 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         if (args.asString(2) == "cpu") {
             VoxelizationCPU(resolution);
             PyramidGCPU();
-            // closing
             DilationCPU(SE, baseScale);
             ConnectedContourCPU();
             ScaleAugmentedPyramidCPU();
+            ErosionCPU();
+            G = E;
             // meshing
         }
         else {
@@ -58,12 +59,14 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             DilationCPU(SE, baseScale);
             ConnectedContourCPU();
             ScaleAugmentedPyramidCPU();
+            ErosionCPU();
         }
         else {
             // TODO: GPU
         }
-        // Can show G, GHat[i], D, Dc, DcHat[i].first
-        ShowVoxel(DcHat[0].first);
+        // Can show G, GHat[i], D, Dc, DcHat[i].first, E
+        ShowVoxel(G, "G");
+        ShowVoxel(E, "E");
     }
     else {
         MGlobal::displayWarning("Unknown command argument!");
@@ -71,6 +74,110 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     }
 
     return MS::kSuccess;
+}
+
+// Algorithm 2 - Parallel spatially varying erosion
+void BoundingProxy::ErosionCPU() {
+    int Ni = (int) D.size();
+    int iMax = (int) log2(Ni);
+
+    // r in {0,1}^3
+    vector<MPoint> r = {{0,0,0}, {0,0,1}, {0,1,0}, {1,0,0},
+                        {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
+
+    // E <- D
+    E = D;
+
+    for (int px = 0; px < Ni; px++) {
+        for (int py = 0; py < Ni; py++) {
+            for (int pz = 0; pz < Ni; pz++) {
+                // for all voxel p | E[p] != 0 && G[p] = 0 do
+                if (!(E[px][py][pz] && !G[px][py][pz])) {
+                    continue;
+                }
+
+                // T <- (iMax, 0)
+                stack<pair<int, MPoint>> T;
+                T.push(pair<int, MPoint>(iMax, MPoint(0, 0, 0)));
+
+                // while T not empty and E[p] != 0 do
+                while (!T.empty() && E[px][py][pz]) {
+                    // v = (i, q) <- peek of T
+                    pair<int, MPoint> v = T.top();
+                    int i = v.first;
+                    MPoint q = v.second;
+
+                    // T <- T \ v
+                    T.pop();
+
+                    if (i == 0) {
+                        // E[p] <- 0
+                        E[px][py][pz] = false;
+                    }
+                    else {
+                        // for all sub-cell vr = (i - 1, 2q + r) of v do
+                        for (int k = 0; k < r.size(); k++) {
+                            // vr = (i - 1, 2q + r)
+                            pair<int, MPoint> vr = pair<int, MPoint>(i - 1, 2 * q + r[k]);
+                            // vr = (i, q)
+                            // DcHat[vr] = Dci[q] = (b, s)
+                            bool b = DcHat[vr.first].first[(int) vr.second.x][(int) vr.second.y][(int) vr.second.z];
+                            double s = DcHat[vr.first].second[(int) vr.second.x][(int) vr.second.y][(int) vr.second.z];
+
+                            // vr_spatial_dilation N p_spatial
+                            // vr_spatial = {q + y, y in [0, 2^i]^3}
+                            // vr_spatial_dilation = {q + y, ||y|| < s}
+                            // Need to convert q from Di space to D0 space before collision test
+                            double twoi = pow(2, vr.first);
+                            MPoint vrSpatialDilationMin = vr.second * twoi - MPoint(s, s, s);
+                            MPoint vrSpatialDilationMax = vr.second * twoi + MPoint(s, s, s) + MPoint(twoi, twoi, twoi);
+
+                            // p_spatial = {p + y, y in [0, 1]^3}
+                            MPoint p = MPoint(px, py, pz);
+                            MPoint pMin = p;
+                            MPoint pMax = p + MPoint(1, 1, 1);
+
+                            bool intersect = false;
+                            // AABB collision test first
+                            intersect = vrSpatialDilationMax.x >= pMin.x && vrSpatialDilationMin.x <= pMax.x &&
+                                        vrSpatialDilationMax.y >= pMin.y && vrSpatialDilationMin.y <= pMax.y &&
+                                        vrSpatialDilationMax.z >= pMin.z && vrSpatialDilationMin.z <= pMax.z;
+
+                            if (!intersect) {
+                                continue;
+                            }
+
+                            // Round corner test secondly
+                            intersect = false;
+                            MPoint vrSpatialMin = vr.second * twoi;
+                            MPoint vrSpatialMax = vr.second * twoi + MPoint(twoi, twoi, twoi);
+
+                            for (int m = 0; m < r.size(); m++) {
+                                MPoint pCorner = p + r[m];
+
+                                // Find closest point between pCorner and vrSpatial
+                                double closestx = max(vrSpatialMin.x, min(pCorner.x, vrSpatialMax.x));
+                                double closesty = max(vrSpatialMin.y, min(pCorner.y, vrSpatialMax.y));
+                                double closestz = max(vrSpatialMin.z, min(pCorner.z, vrSpatialMax.z));
+
+                                double dSquare = pow(pCorner.x - closestx, 2) + pow(pCorner.y - closesty, 2) + pow(pCorner.z - closestz, 2);
+                                intersect = dSquare <= s * s;
+                                if (intersect) {
+                                    break;
+                                }
+                            }
+
+                            // if vr_spatial_dilation N p_spatial != empty and DcHat[vr] = (1,.)
+                            if (intersect && b) {
+                                // T <- T U vr
+                                T.push(vr);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Build a scale-augmented pyramid DcHat = {Dc^i} with Dc^i : N_i^3 -> {0,1} x R
@@ -121,7 +228,7 @@ void BoundingProxy::ConnectedContourCPU() {
 
 // Algorithm 1 - Parallel spatially varying dilation
 void BoundingProxy::DilationCPU(MString SE, double baseScale) {
-    int Ni = (int) GHat[0].size();
+    int Ni = (int) G.size();
     if (!editedS) {
         // Initialize S if haven't
         S = vector<vector<vector<double>>>(Ni, vector<vector<double>>(Ni, vector<double>(Ni, baseScale)));
@@ -134,7 +241,7 @@ void BoundingProxy::DilationCPU(MString SE, double baseScale) {
                         {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
 
     // D <- G
-    D = GHat[0];
+    D = G;
 
     for (int px = 0; px < Ni; px++) {
         for (int py = 0; py < Ni; py++) {
@@ -173,7 +280,7 @@ void BoundingProxy::DilationCPU(MString SE, double baseScale) {
                             // Need to convert q from Gi space to G0 space before collision test
                             double twoi = pow(2, vr.first);
                             MPoint vrSpatialMin = vr.second * twoi;
-                            MPoint vrSpatialMax = vrSpatialMin + MPoint(twoi, twoi, twoi);
+                            MPoint vrSpatialMax = vr.second * twoi + MPoint(twoi, twoi, twoi);
                             
                             bool intersect = false;
                             double Sp = S[px][py][pz];
@@ -393,16 +500,14 @@ MStatus BoundingProxy::SelectMesh() {
     return MS::kSuccess;
 }
 
-void BoundingProxy::ShowVoxel(vector<vector<vector<bool>>> grid) {
+void BoundingProxy::ShowVoxel(vector<vector<vector<bool>>> grid, MString name) {
     int res = (int) grid.size();
     MString deleteGroupCmd =
-        "if (`objExists voxelGroup`) { "
-        "delete voxelGroup; "
+        "if (`objExists " + name + "`) { "
+        "delete " + name + "; "
         "} "
-        "group -empty -name voxelGroup;";
+        "group -empty -name " + name + ";";
     MGlobal::executeCommand(deleteGroupCmd);
-
-    int voxelCount = 0;
 
     for (int x = 0; x < res; x++) {
         for (int y = 0; y < res; y++) {
@@ -414,21 +519,21 @@ void BoundingProxy::ShowVoxel(vector<vector<vector<bool>>> grid) {
                     double pz = z * deltaP.z;
 
                     // Create a cube for the voxel
-                    std::string cubeName = "voxelCube_" + std::to_string(voxelCount);
-                    std::string cubeCmd = "polyCube -w " + std::to_string(deltaP.x) +
-                        " -h " + std::to_string(deltaP.y) +
-                        " -d " + std::to_string(deltaP.z) +
+                    string cubeName = "voxelCube_" + to_string(voxelCount);
+                    string cubeCmd = "polyCube -w " + to_string(deltaP.x) +
+                        " -h " + to_string(deltaP.y) +
+                        " -d " + to_string(deltaP.z) +
                         " -n " + cubeName + ";";
                     MGlobal::executeCommand(MString(cubeCmd.c_str()));
 
                     // Move the cube to the voxel position
-                    std::string moveCmd = "move " + std::to_string(px) + " " +
-                        std::to_string(py) + " " +
-                        std::to_string(pz) + " " + cubeName + ";";
+                    string moveCmd = "move " + to_string(px) + " " +
+                        to_string(py) + " " +
+                        to_string(pz) + " " + cubeName + ";";
                     MGlobal::executeCommand(MString(moveCmd.c_str()));
 
                     // Parent to group
-                    std::string parentCmd = "parent " + cubeName + " voxelGroup;";
+                    string parentCmd = "parent " + cubeName + " " + name.asChar() + ";";
                     MGlobal::executeCommand(MString(parentCmd.c_str()));
 
                     voxelCount++;
