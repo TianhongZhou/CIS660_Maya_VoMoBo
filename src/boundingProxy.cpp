@@ -49,7 +49,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             // Compute Mesh C
             CubeMarching();
             // Show Mesh C
-            CreateMayaMesh("E1");
+            CreateMayaMesh("E");
         }
         else {
             // TODO: GPU
@@ -223,7 +223,7 @@ void BoundingProxy::ErosionCPU() {
                                         vrSpatialDilationMax.y >= pMin.y && vrSpatialDilationMin.y <= pMax.y &&
                                         vrSpatialDilationMax.z >= pMin.z && vrSpatialDilationMin.z <= pMax.z;
 
-                            if (!intersect) {
+                            if (!intersect || !b) {
                                 continue;
                             }
 
@@ -485,6 +485,18 @@ void BoundingProxy::VoxelizationCPU(int res) {
     double maxX = max.x, maxY = max.y, maxZ = max.z;
     deltaP = MPoint((maxX - minX) / res, (maxY - minY) / res, (maxZ - minZ) / res);
 
+    double scale = res * res * 5.0;
+    minX *= scale;
+    minY *= scale;
+    minZ *= scale;
+    maxX *= scale;
+    maxY *= scale;
+    maxZ *= scale;
+
+    for (unsigned int i = 0; i < vertices.length(); i++) {
+        vertices[i] *= scale;
+    }
+
     // Iterate through all triangles
     for (unsigned int i = 0; i < triangleIndices.length(); i += 3) {
         MPoint v0 = vertices[triangleIndices[i]];
@@ -512,12 +524,17 @@ void BoundingProxy::VoxelizationCPU(int res) {
             for (int z = minZ_vox; z <= maxZ_vox; z++) {
                 double vy = Voxel2World(y, minY, maxY, res);
                 double vz = Voxel2World(z, minZ, maxZ, res);
+                vy += deltaP.y / 2.0;
+                vz += deltaP.z / 2.0;
 
                 // Check if voxel column is inside the triangle projection
                 if (!InsideTriangleYZ(v0, v1, v2, vy, vz)) continue;
 
                 // Compute intersection with triangle plane
                 double xIntersect = IntersectTriangleX(v0, v1, v2, vy, vz);
+                if (xIntersect == std::numeric_limits<double>::max()) {
+                    continue;
+                }
                 int xIntersectVox = World2Voxel(xIntersect, minX, maxX, res);
 
                 // Flip all voxels beyond the intersection

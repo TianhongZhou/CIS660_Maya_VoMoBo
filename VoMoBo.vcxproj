@@ -128,7 +128,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions> NT_PLUGIN</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>F:\software\Maya\Maya2025\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>F:\software\Maya\Maya2025\include;F:\document\University\CIS 660\Project\VoMoBo\libs</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
