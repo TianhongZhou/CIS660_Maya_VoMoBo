@@ -32,6 +32,8 @@ public:
     vector<vector<vector<double>>> S;
     unordered_map<int, pair<vector<vector<vector<bool>>>, vector<vector<vector<double>>>>> DcHat;
     bool editedS;
+    vector<vector<vector<bool>>> E;
+    int voxelCount;
 
     BoundingProxy();
     ~BoundingProxy();
@@ -43,7 +45,7 @@ public:
     int World2Voxel(double w, double min, double max, int res);
     double Voxel2World(int v, double min, double max, int res);
     MVector CrossProduct(MVector a, MVector b);
-    void ShowVoxel(vector<vector<vector<bool>>> grid);
+    void ShowVoxel(vector<vector<vector<bool>>> grid, MString name);
     bool InsideTriangleYZ(MPoint v0, MPoint v1, MPoint v2, double y, double z);
     double IntersectTriangleX(MPoint v0, MPoint v1, MPoint v2, double y, double z);
     double EdgeFunction(MPoint a, MPoint b, MVector p);
@@ -54,6 +56,7 @@ public:
     void ScaleAugmentedPyramidCPU();
     template <typename T, typename CombineOp>
     vector<vector<vector<T>>> CalculatePyramid(vector<vector<vector<T>>> prev, vector<MPoint> t, CombineOp combine);
+    void ErosionCPU();
 };
 
 #endif // BOUNDING_PROXY_H
