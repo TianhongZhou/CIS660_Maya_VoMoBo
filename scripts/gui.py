@@ -60,7 +60,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         # Brush Size Slider
         layout.addWidget(QtWidgets.QLabel("Brush Size:"))
         self.brush_size_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.brush_size_slider.setRange(1, 2048)
+        self.brush_size_slider.setRange(1, 3000)
         self.brush_size_slider.setValue(10)
         layout.addWidget(self.brush_size_slider)
 
@@ -122,7 +122,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.generate_button.clicked.connect(self.generate_action)
 
         layout.addWidget(self.scale_field_button)
-        layout.addWidget(self.voxel_button)
+        # layout.addWidget(self.voxel_button)
         layout.addWidget(self.generate_button)
 
         self.setLayout(layout)
@@ -138,7 +138,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
     def auto_action(self):
         """if action_executed is true, call action again"""
         if self.action_executed:
-            self.voxel_action()
+            self.generate_action()
 
     def select_object(self):
         """Gets the currently selected object in Maya and updates the label."""
@@ -181,7 +181,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         seMode = "cube" if self.cube_radio.isChecked() else "sphere"
         baseScale = self.base_scale_spinbox.value()
         self.action_executed = True
-        cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}", "{seMode}, {baseScale}, "{self.selected_object}")')
+        cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}", "{seMode}", {baseScale}, "{self.selected_object}")')
 
 def show():
     global generate_plugin_ui

@@ -32,19 +32,30 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         SelectMesh();
 
         if (args.asString(2) == "cpu") {
+            // Compute G
             VoxelizationCPU(resolution);
+            // Compute GHat
             PyramidGCPU();
+            // Compute D
             DilationCPU(SE, baseScale);
+            // Compute Dc
             ConnectedContourCPU();
+            // Compute DcHat
             ScaleAugmentedPyramidCPU();
+            // Compute E
             ErosionCPU();
-            G = E;
-            // meshing
+            // Store E to outputG
+            outputG = E;
+            // Compute Mesh C
+            CubeMarching();
+            // Show Mesh C
+            CreateMayaMesh("E1");
         }
         else {
             // TODO: GPU
         }
     }
+    // For debug purpose only
     else if (command == "show_voxel") {
         int resolution = args.asInt(1);
         MString SE = args.asString(3);
@@ -66,7 +77,6 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         }
         // Can show G, GHat[i], D, Dc, DcHat[i].first, E
         ShowVoxel(G, "G");
-        ShowVoxel(E, "E");
     }
     else {
         MGlobal::displayWarning("Unknown command argument!");
@@ -74,6 +84,76 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     }
 
     return MS::kSuccess;
+}
+
+// Convert Eigen V and F to Maya mesh
+void BoundingProxy::CreateMayaMesh(MString name) {
+    MPointArray mayaVertices;
+    MIntArray mayaFaceCounts;
+    MIntArray mayaFaceConnects;
+
+    // Convert Eigen vertices to MPointArray
+    for (int i = 0; i < V.rows(); i++) {
+        mayaVertices.append(MPoint(V(i, 0), V(i, 1), V(i, 2)));
+    }
+
+    // Convert Eigen faces to MIntArray
+    for (int i = 0; i < F.rows(); i++) {
+        mayaFaceConnects.append(F(i, 0));
+        mayaFaceConnects.append(F(i, 1));
+        mayaFaceConnects.append(F(i, 2));
+        mayaFaceCounts.append(3);
+    }
+
+    // Create the mesh in Maya
+    MFnMesh meshFn;
+    MObject newMesh = meshFn.create(
+        mayaVertices.length(), 
+        mayaFaceCounts.length(), 
+        mayaVertices,          
+        mayaFaceCounts,     
+        mayaFaceConnects,    
+        MObject::kNullObj    
+    );
+
+    // Name the mesh
+    MFnDagNode dagNode(newMesh);
+    dagNode.setName(name);
+}
+
+// Convert outputG to mesh using cube marchings from igl adn eigen
+void BoundingProxy::CubeMarching() {
+    int N = (int) outputG.size();
+    int newN = N + 2;
+
+    Eigen::MatrixXd Sm(newN * newN * newN, 1);
+    Eigen::MatrixXd GV(newN * newN * newN, 3);
+
+    double newDeltaX = deltaP.x * N / newN;
+    double newDeltaY = deltaP.y * N / newN;
+    double newDeltaZ = deltaP.z * N / newN;
+
+    int index = 0;
+    for (int x = 0; x < newN; x++) {
+        for (int y = 0; y < newN; y++) {
+            for (int z = 0; z < newN; z++) {
+                if (x == 0 || y == 0 || z == 0 || x == newN - 1 || y == newN - 1 || z == newN - 1) {
+                    Sm(index, 0) = 0.0;
+                }
+                else {
+                    Sm(index, 0) = outputG[x - 1][y - 1][z - 1] ? 1.0 : 0.0;
+                }
+
+                GV(index, 0) = (x - 1) * newDeltaX;
+                GV(index, 1) = (y - 1) * newDeltaY;
+                GV(index, 2) = (z - 1) * newDeltaZ;
+
+                index++;
+            }
+        }
+    }
+
+    igl::copyleft::marching_cubes(Sm, GV, newN, newN, newN, V, F);
 }
 
 // Algorithm 2 - Parallel spatially varying erosion
@@ -422,10 +502,10 @@ void BoundingProxy::VoxelizationCPU(int res) {
         int z2 = World2Voxel(v2.z, minZ, maxZ, res);
 
         // Compute bounding box in voxel space
-        int minY_vox = std::min({y0, y1, y2});
-        int maxY_vox = std::max({y0, y1, y2});
-        int minZ_vox = std::min({z0, z1, z2});
-        int maxZ_vox = std::max({z0, z1, z2});
+        int minY_vox = std::min({ y0, y1, y2 });
+        int maxY_vox = std::max({ y0, y1, y2 });
+        int minZ_vox = std::min({ z0, z1, z2 });
+        int maxZ_vox = std::max({ z0, z1, z2 });
 
         // Iterate over yz voxel columns
         for (int y = minY_vox; y <= maxY_vox; y++) {
