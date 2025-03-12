@@ -10,11 +10,15 @@
 #include <maya/MBoundingBox.h>
 #include <maya/MString.h>
 #include <maya/MFnTransform.h>
+#include <maya/MFnSet.h>
+#include <maya/MObject.h>
 #include <iostream>
 #include <vector>
 #include <cmath>
 #include <unordered_map>
 #include <stack>
+#include <igl/copyleft/marching_cubes.h>
+#include <Eigen/Dense>
 using namespace std;
 
 constexpr double EPSILON = 1e-6;
@@ -33,7 +37,10 @@ public:
     unordered_map<int, pair<vector<vector<vector<bool>>>, vector<vector<vector<double>>>>> DcHat;
     bool editedS;
     vector<vector<vector<bool>>> E;
+    vector<vector<vector<bool>>> outputG;
     int voxelCount;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
 
     BoundingProxy();
     ~BoundingProxy();
@@ -57,6 +64,8 @@ public:
     template <typename T, typename CombineOp>
     vector<vector<vector<T>>> CalculatePyramid(vector<vector<vector<T>>> prev, vector<MPoint> t, CombineOp combine);
     void ErosionCPU();
+    void CubeMarching();
+    void CreateMayaMesh(MString name);
 };
 
 #endif // BOUNDING_PROXY_H
