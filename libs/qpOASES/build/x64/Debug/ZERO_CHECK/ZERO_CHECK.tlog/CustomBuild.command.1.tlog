@@ -1,0 +1,10 @@
+^F:\DOCUMENT\UNIVERSITY\CIS 660\PROJECT\VOMOBO\LIBS\QPOASES\BUILD\CMAKEFILES\1C960A8DCE308EFA76705E165D10A079\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SF:/document/University/CIS 660/Project/VoMoBo/libs/qpOASES" "-BF:/document/University/CIS 660/Project/VoMoBo/libs/qpOASES/build" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "F:/document/University/CIS 660/Project/VoMoBo/libs/qpOASES/build/qpOASES.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

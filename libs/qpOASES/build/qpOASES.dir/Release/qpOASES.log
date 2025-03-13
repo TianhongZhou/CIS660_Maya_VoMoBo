@@ -1,0 +1,21 @@
+﻿  Building Custom Rule F:/document/University/CIS 660/Project/VoMoBo/libs/qpOASES/CMakeLists.txt
+  BLASReplacement.cpp
+  Bounds.cpp
+  Constraints.cpp
+  Flipper.cpp
+  Indexlist.cpp
+  LAPACKReplacement.cpp
+  Matrices.cpp
+  MessageHandling.cpp
+  OQPinterface.cpp
+  Options.cpp
+  QProblem.cpp
+  QProblemB.cpp
+  SQProblem.cpp
+  SQProblemSchur.cpp
+  SolutionAnalysis.cpp
+  SparseSolver.cpp
+  SubjectTo.cpp
+  Utils.cpp
+  Generating Code...
+  qpOASES.vcxproj -> F:\document\University\CIS 660\Project\VoMoBo\libs\qpOASES\build\libs\Release\qpOASES.lib

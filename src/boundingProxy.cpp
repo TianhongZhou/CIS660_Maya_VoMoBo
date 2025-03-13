@@ -21,7 +21,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     MString command = args.asString(0);
 
     if (command == "reset_scale_field") {
-        ResetScaleField();
+        resetScaleField();
     } 
     else if (command == "generate") {
         int resolution = args.asInt(1);
@@ -29,27 +29,30 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         double baseScale = args.asDouble(4);
         meshName = args.asString(5);
 
-        SelectMesh();
+        selectMesh();
 
         if (args.asString(2) == "cpu") {
             // Compute G
-            VoxelizationCPU(resolution);
+            voxelizationCPU(resolution);
             // Compute GHat
-            PyramidGCPU();
+            pyramidGCPU();
             // Compute D
-            DilationCPU(SE, baseScale);
+            dilationCPU(SE, baseScale);
             // Compute Dc
-            ConnectedContourCPU();
+            connectedContourCPU();
             // Compute DcHat
-            ScaleAugmentedPyramidCPU();
+            scaleAugmentedPyramidCPU();
             // Compute E
-            ErosionCPU();
+            erosionCPU();
             // Store E to outputG
             outputG = E;
             // Compute Mesh C
-            CubeMarching();
+            cubeMarching();
+            createMayaMesh("cube");
+            // CQEM on C
+            simplifyMesh();
             // Show Mesh C
-            CreateMayaMesh("E");
+            createMayaMesh("final");
         }
         else {
             // TODO: GPU
@@ -62,21 +65,21 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         double baseScale = args.asDouble(4);
         meshName = args.asString(5);
 
-        SelectMesh();
+        selectMesh();
 
         if (args.asString(2) == "cpu") {
-            VoxelizationCPU(resolution);
-            PyramidGCPU();
-            DilationCPU(SE, baseScale);
-            ConnectedContourCPU();
-            ScaleAugmentedPyramidCPU();
-            ErosionCPU();
+            voxelizationCPU(resolution);
+            pyramidGCPU();
+            dilationCPU(SE, baseScale);
+            connectedContourCPU();
+            scaleAugmentedPyramidCPU();
+            erosionCPU();
         }
         else {
             // TODO: GPU
         }
         // Can show G, GHat[i], D, Dc, DcHat[i].first, E
-        ShowVoxel(G, "G");
+        showVoxel(G, "G");
     }
     else {
         MGlobal::displayWarning("Unknown command argument!");
@@ -86,8 +89,235 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     return MS::kSuccess;
 }
 
+// Deriving Error Quadrics based-on "Surface Simplification Using Quadric Error Metrics" (Garland, Heckbert)
+void BoundingProxy::computeQuadricMatrices() {
+    quadrics.resize(V.rows());
+    for (int i = 0; i < F.rows(); i++) {
+        Eigen::Vector3d v0 = V.row(F(i, 0));
+        Eigen::Vector3d v1 = V.row(F(i, 1));
+        Eigen::Vector3d v2 = V.row(F(i, 2));
+
+        Eigen::Vector3d normal = (v1 - v0).cross(v2 - v0).normalized();
+        double d = -normal.dot(v0);
+        // p = [a b c d] represents the plane defined by the equation ax + by + cz + d = 0
+        Eigen::Vector4d plane(normal.x(), normal.y(), normal.z(), d);
+
+        quadrics[F(i, 0)].addPlane(plane);
+        quadrics[F(i, 1)].addPlane(plane);
+        quadrics[F(i, 2)].addPlane(plane);
+    }
+}
+
+// CQEM based-on "Bounding Proxies for Shape Approximation Supplemental Materials"
+double BoundingProxy::computeCollapseCost(Quadric& Q0, Quadric& Q1, Eigen::Vector3d& v_opt, int v0, int v1) {
+    vector<Triangle> triangles;
+    for (int i = 0; i < F.rows(); i++) {
+        int v0_idx = F(i, 0);
+        int v1_idx = F(i, 1);
+        int v2_idx = F(i, 2);
+
+        // 只考虑包含 v0 或 v1 的三角形
+        if (v0_idx == v0 || v1_idx == v0 || v2_idx == v0 ||
+            v0_idx == v1 || v1_idx == v1 || v2_idx == v1) {
+
+            Eigen::Vector3d v0_pos = V.row(v0_idx).transpose();
+            Eigen::Vector3d v1_pos = V.row(v1_idx).transpose();
+            Eigen::Vector3d v2_pos = V.row(v2_idx).transpose();
+
+            Eigen::Vector3d normal = (v1_pos - v0_pos).cross(v2_pos - v0_pos);
+            normal.normalize();
+
+            double d = -normal.dot(v0_pos);
+
+            triangles.push_back(Triangle{v0_pos, v1_pos, v2_pos, normal, d});
+        }
+    }
+
+    // 使用完整的 4x4 Quadric 矩阵
+    Eigen::Matrix4d Q4x4 = Q0.Q + Q1.Q;
+    /*Q4x4(3, 0) = 0;
+    Q4x4(3, 1) = 0;
+    Q4x4(3, 2) = 0;
+    Q4x4(3, 3) = 1;*/
+
+    // 检查 Q 是否是正定的
+    if (Q4x4.fullPivLu().rank() < 4) {
+        return std::numeric_limits<double>::infinity();
+    }
+
+    // QP 变量（4维）
+    int num_constraints = (int) triangles.size();
+    Eigen::MatrixXd A(num_constraints, 4);
+    Eigen::VectorXd b(num_constraints);
+
+    // 构造 A 和 b 矩阵
+    for (int i = 0; i < num_constraints; i++) {
+        A.row(i).head<3>() = triangles[i].normal.transpose();
+        A(i, 3) = triangles[i].d;
+        b(i) = 0;
+    }
+
+    // qpOASES 变量
+    qpOASES::SQProblem qp(4, num_constraints);  // 4 维变量（齐次坐标），num_constraints 个不等式约束
+    qpOASES::Options options;
+    options.setToMPC();
+    options.printLevel = qpOASES::PL_LOW;
+    qp.setOptions(options);
+
+    // 目标函数 H (对称矩阵) 和 g
+    qpOASES::real_t H[16], g[4] = {0, 0, 0, 0};  // g 是零向量
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            H[i * 4 + j] = Q4x4(i, j);
+        }
+    }
+
+    // 线性不等式约束
+    vector<qpOASES::real_t> A_qp(num_constraints * 4);
+    vector<qpOASES::real_t> lb(num_constraints);
+    vector<qpOASES::real_t> ub(num_constraints);
+    qpOASES::real_t* A_qp_ptr = A_qp.data();
+    qpOASES::real_t* lb_ptr = lb.data();
+    qpOASES::real_t* ub_ptr = ub.data();
+    for (int i = 0; i < num_constraints; i++) {
+        for (int j = 0; j < 4; j++) {
+            A_qp[i * 4 + j] = A(i, j);
+        }
+        lb[i] = 0;
+        ub[i] = qpOASES::INFTY;
+    }
+
+    // 初始化求解
+    int nWSR = 100;
+    qp.init(H, g, A_qp_ptr, nullptr, nullptr, lb_ptr, ub_ptr, nWSR);
+
+    // 结果
+    qpOASES::real_t v_opt_qp[4];
+    qp.getPrimalSolution(v_opt_qp);
+    v_opt = Eigen::Vector3d(v_opt_qp[0], v_opt_qp[1], v_opt_qp[2]);  // 去掉齐次坐标
+
+    // 计算最终的 cost
+    Eigen::Vector4d v_opt_homogeneous(v_opt[0], v_opt[1], v_opt[2], 1);
+    MString costMessage = "Cost: " + MString() + v_opt_homogeneous.transpose() * Q4x4 * v_opt_homogeneous;
+    MGlobal::displayInfo(costMessage);
+
+    MString vOptMessage = "v_opt: (" + MString() + v_opt_qp[0] + ", " +
+        MString() + v_opt_qp[1] + ", " +
+        MString() + v_opt_qp[2] + ")";
+    MGlobal::displayInfo(vOptMessage);
+    return v_opt_homogeneous.transpose() * Q4x4 * v_opt_homogeneous;
+}
+
+// Prevent collapse of an edge e = (v0, v1) for which ||v0 - v1|| > 4 * min(S[v0], S[v1])
+bool BoundingProxy::edgeLengthExceedsThreshold(int v0, int v1) {
+    Eigen::Vector3d p0 = V.row(v0);
+    Eigen::Vector3d p1 = V.row(v1);
+
+    double minX = V.col(0).minCoeff();
+    double maxX = V.col(0).maxCoeff();
+    double minY = V.col(1).minCoeff();
+    double maxY = V.col(1).maxCoeff();
+    double minZ = V.col(2).minCoeff();
+    double maxZ = V.col(2).maxCoeff();
+
+    int res = (int) S.size();
+    int v0x = world2Voxel(p0.x(), minX, maxX, res);
+    int v0y = world2Voxel(p0.y(), minY, maxY, res);
+    int v0z = world2Voxel(p0.z(), minZ, maxZ, res);
+    int v1x = world2Voxel(p1.x(), minX, maxX, res);
+    int v1y = world2Voxel(p1.y(), minY, maxY, res);
+    int v1z = world2Voxel(p1.z(), minZ, maxZ, res);
+
+    double scale_v0 = S[v0x][v0y][v0z];
+    double scale_v1 = S[v1x][v1y][v1z];
+
+    return (p0 - p1).norm() > 4 * std::min(scale_v0, scale_v1);
+}
+
+void BoundingProxy::performCollapse(EdgeCollapse& ec) {
+    int v0 = ec.v0;
+    int v1 = ec.v1;
+    Eigen::Vector3d v_opt = ec.v_opt;
+
+    V.row(v0) = v_opt;
+
+    quadrics[v0].Q += quadrics[v1].Q;
+
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            if (F(i, j) == v1) {
+                F(i, j) = v0;
+            }
+        }
+    }
+
+    vector<Eigen::Vector3i> newFaces;
+    for (int i = 0; i < F.rows(); i++) {
+        if (F(i, 0) != F(i, 1) && F(i, 1) != F(i, 2) && F(i, 0) != F(i, 2)) {
+            newFaces.push_back(F.row(i));
+        }
+    }
+
+    F.resize(newFaces.size(), 3);
+    for (int i = 0; i < newFaces.size(); i++) {
+        F.row(i) = newFaces[i];
+    }
+
+    priority_queue<EdgeCollapse> newQueue;
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            int a = F(i, j);
+            int b = F(i, (j + 1) % 3);
+            if (a > b) {
+                continue;
+            }
+
+            Eigen::Vector3d v_new_opt;
+            double cost = computeCollapseCost(quadrics[a], quadrics[b], v_new_opt, a, b);
+
+            //if (cost < std::numeric_limits<double>::infinity()) {
+            //    newQueue.push({a, b, cost, v_new_opt});
+            //}
+        }
+    }
+    collapseQueue.swap(newQueue);
+}
+
+void BoundingProxy::simplifyMesh() {
+    quadrics.clear();
+    computeQuadricMatrices();
+
+    priority_queue<EdgeCollapse>().swap(collapseQueue);
+
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            int v0 = F(i, j);
+            int v1 = F(i, (j + 1) % 3);
+            if (v0 > v1) {
+                continue;
+            }
+
+            Eigen::Vector3d v_opt;
+            double cost = computeCollapseCost(quadrics[v0], quadrics[v1], v_opt, v0, v1);
+
+            collapseQueue.push({v0, v1, cost, v_opt});
+        }
+    }
+
+    while (!collapseQueue.empty()) {
+        EdgeCollapse ec = collapseQueue.top();
+        collapseQueue.pop();
+
+        if (edgeLengthExceedsThreshold(ec.v0, ec.v1)) {
+            continue;
+        }
+
+        performCollapse(ec);
+    }
+}
+
 // Convert Eigen V and F to Maya mesh
-void BoundingProxy::CreateMayaMesh(MString name) {
+void BoundingProxy::createMayaMesh(MString name) {
     MPointArray mayaVertices;
     MIntArray mayaFaceCounts;
     MIntArray mayaFaceConnects;
@@ -122,7 +352,7 @@ void BoundingProxy::CreateMayaMesh(MString name) {
 }
 
 // Convert outputG to mesh using cube marchings from igl adn eigen
-void BoundingProxy::CubeMarching() {
+void BoundingProxy::cubeMarching() {
     int N = (int) outputG.size();
     int newN = N + 2;
 
@@ -153,11 +383,11 @@ void BoundingProxy::CubeMarching() {
         }
     }
 
-    igl::copyleft::marching_cubes(Sm, GV, newN, newN, newN, V, F);
+    igl::copyleft::marching_cubes(Sm, GV, newN, newN, newN, 0, V, F);
 }
 
 // Algorithm 2 - Parallel spatially varying erosion
-void BoundingProxy::ErosionCPU() {
+void BoundingProxy::erosionCPU() {
     int Ni = (int) D.size();
     int iMax = (int) log2(Ni);
 
@@ -261,7 +491,7 @@ void BoundingProxy::ErosionCPU() {
 }
 
 // Build a scale-augmented pyramid DcHat = {Dc^i} with Dc^i : N_i^3 -> {0,1} x R
-void BoundingProxy::ScaleAugmentedPyramidCPU() {
+void BoundingProxy::scaleAugmentedPyramidCPU() {
     int N0 = (int) Dc.size();
     int iMax = (int) log2(N0);
     // Dc0[p] = (Dc[p], S[p]) 
@@ -273,13 +503,13 @@ void BoundingProxy::ScaleAugmentedPyramidCPU() {
                         {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
 
     for (int i = 1; i <= iMax; i++) {
-        DcHat[i].first = CalculatePyramid(DcHat[i - 1].first, t, [](bool a, bool b) {return a || b;});
-        DcHat[i].second = CalculatePyramid(DcHat[i - 1].second, t, [](double a, double b) {return max(a, b);});
+        DcHat[i].first = calculatePyramid(DcHat[i - 1].first, t, [](bool a, bool b) {return a || b;});
+        DcHat[i].second = calculatePyramid(DcHat[i - 1].second, t, [](double a, double b) {return max(a, b);});
     }
 }
 
 // Compute Dc from D using 6-connected contour
-void BoundingProxy::ConnectedContourCPU() {
+void BoundingProxy::connectedContourCPU() {
     int N = (int) D.size();
     vector<MPoint> r = {{0,0,1}, {0,1,0}, {1,0,0}, {0,0,-1}, {0,-1,0}, {-1,0,0}};
     Dc = D;
@@ -307,7 +537,7 @@ void BoundingProxy::ConnectedContourCPU() {
 }
 
 // Algorithm 1 - Parallel spatially varying dilation
-void BoundingProxy::DilationCPU(MString SE, double baseScale) {
+void BoundingProxy::dilationCPU(MString SE, double baseScale) {
     int Ni = (int) G.size();
     if (!editedS) {
         // Initialize S if haven't
@@ -399,7 +629,7 @@ void BoundingProxy::DilationCPU(MString SE, double baseScale) {
     }
 }
 
-void BoundingProxy::ResetScaleField() {
+void BoundingProxy::resetScaleField() {
     editedS = false;
     S.clear();
 }
@@ -407,7 +637,7 @@ void BoundingProxy::ResetScaleField() {
 // for all p in Ni^3, Gi[p] = max_t G^{i - 1}[2p + t];
 // for all p in Ni^3, Dci[p] = max_t Dc^{i - 1}[2p + t];
 template <typename T, typename CombineOp>
-vector<vector<vector<T>>> BoundingProxy::CalculatePyramid(vector<vector<vector<T>>> prev, vector<MPoint> t, CombineOp combine) {
+vector<vector<vector<T>>> BoundingProxy::calculatePyramid(vector<vector<vector<T>>> prev, vector<MPoint> t, CombineOp combine) {
     int Ni_1 = (int) prev.size();
     int Ni = Ni_1 / 2;
 
@@ -430,7 +660,7 @@ vector<vector<vector<T>>> BoundingProxy::CalculatePyramid(vector<vector<vector<T
 }
 
 // Build pyramid G_hat = {Gi} with Gi : N_i^3 -> {0,1}, and Ni = N0 / 2^i
-void BoundingProxy::PyramidGCPU() {
+void BoundingProxy::pyramidGCPU() {
     int N0 = (int) G.size();
     int iMax = (int) log2(N0);
     // G0[p] = G[p] 
@@ -441,22 +671,22 @@ void BoundingProxy::PyramidGCPU() {
                         {0,1,1}, {1,0,1}, {1,1,0}, {1,1,1}};
     
     for (int i = 1; i <= iMax; i++) {
-        GHat[i] = CalculatePyramid(GHat[i - 1], t, [](bool a, bool b) {return a || b;});
+        GHat[i] = calculatePyramid(GHat[i - 1], t, [](bool a, bool b) {return a || b;});
     }
 }
 
-int BoundingProxy::World2Voxel(double w, double min, double max, int res) {
+int BoundingProxy::world2Voxel(double w, double min, double max, int res) {
     int result = (int) ((w - min) / (max - min) * (res - 1));
     result = std::max(result, 0);
     result = std::min(result, res - 1);
     return result;
 }
 
-double BoundingProxy::Voxel2World(int v, double min, double max, int res) {
+double BoundingProxy::voxel2World(int v, double min, double max, int res) {
     return min + (v / (double) (res - 1)) * (max - min);
 }
 
-MVector BoundingProxy::CrossProduct(MVector a, MVector b) {
+MVector BoundingProxy::crossProduct(MVector a, MVector b) {
     return MVector(
         a.y * b.z - a.z * b.y,
         a.z * b.x - a.x * b.z,
@@ -465,7 +695,7 @@ MVector BoundingProxy::CrossProduct(MVector a, MVector b) {
 }
 
 // Method based-on "Fast Parallel Surface and Solid Voxelization on GPUs" (Schwarz, Seidel)
-void BoundingProxy::VoxelizationCPU(int res) {
+void BoundingProxy::voxelizationCPU(int res) {
     // Initialize voxels G
     G = vector<vector<vector<bool>>>(res, vector<vector<bool>>(res, vector<bool>(res, false)));
 
@@ -504,14 +734,14 @@ void BoundingProxy::VoxelizationCPU(int res) {
         MPoint v2 = vertices[triangleIndices[i + 2]];
 
         // Convert to voxel space
-        int y0 = World2Voxel(v0.y, minY, maxY, res);
-        int z0 = World2Voxel(v0.z, minZ, maxZ, res);
+        int y0 = world2Voxel(v0.y, minY, maxY, res);
+        int z0 = world2Voxel(v0.z, minZ, maxZ, res);
 
-        int y1 = World2Voxel(v1.y, minY, maxY, res);
-        int z1 = World2Voxel(v1.z, minZ, maxZ, res);
+        int y1 = world2Voxel(v1.y, minY, maxY, res);
+        int z1 = world2Voxel(v1.z, minZ, maxZ, res);
 
-        int y2 = World2Voxel(v2.y, minY, maxY, res);
-        int z2 = World2Voxel(v2.z, minZ, maxZ, res);
+        int y2 = world2Voxel(v2.y, minY, maxY, res);
+        int z2 = world2Voxel(v2.z, minZ, maxZ, res);
 
         // Compute bounding box in voxel space
         int minY_vox = std::min({ y0, y1, y2 });
@@ -522,20 +752,20 @@ void BoundingProxy::VoxelizationCPU(int res) {
         // Iterate over yz voxel columns
         for (int y = minY_vox; y <= maxY_vox; y++) {
             for (int z = minZ_vox; z <= maxZ_vox; z++) {
-                double vy = Voxel2World(y, minY, maxY, res);
-                double vz = Voxel2World(z, minZ, maxZ, res);
+                double vy = voxel2World(y, minY, maxY, res);
+                double vz = voxel2World(z, minZ, maxZ, res);
                 vy += deltaP.y / 2.0;
                 vz += deltaP.z / 2.0;
 
                 // Check if voxel column is inside the triangle projection
-                if (!InsideTriangleYZ(v0, v1, v2, vy, vz)) continue;
+                if (!insideTriangleYZ(v0, v1, v2, vy, vz)) continue;
 
                 // Compute intersection with triangle plane
-                double xIntersect = IntersectTriangleX(v0, v1, v2, vy, vz);
+                double xIntersect = intersectTriangleX(v0, v1, v2, vy, vz);
                 if (xIntersect == std::numeric_limits<double>::max()) {
                     continue;
                 }
-                int xIntersectVox = World2Voxel(xIntersect, minX, maxX, res);
+                int xIntersectVox = world2Voxel(xIntersect, minX, maxX, res);
 
                 // Flip all voxels beyond the intersection
                 for (int x = xIntersectVox; x < res; x++) {
@@ -546,24 +776,24 @@ void BoundingProxy::VoxelizationCPU(int res) {
     }
 }
 
-double BoundingProxy::EdgeFunction(MPoint a, MPoint b, MVector p) {
+double BoundingProxy::edgeFunction(MPoint a, MPoint b, MVector p) {
     return (p.x - a.y) * (b.z - a.z) - (p.y - a.z) * (b.y - a.y);
 };
 
-bool BoundingProxy::InsideTriangleYZ(MPoint v0, MPoint v1, MPoint v2, double y, double z) {
+bool BoundingProxy::insideTriangleYZ(MPoint v0, MPoint v1, MPoint v2, double y, double z) {
     MVector p(y, z);
 
     // Compute signed area tests (edge function tests)
-    double w0 = EdgeFunction(v0, v1, p);
-    double w1 = EdgeFunction(v1, v2, p);
-    double w2 = EdgeFunction(v2, v0, p);
+    double w0 = edgeFunction(v0, v1, p);
+    double w1 = edgeFunction(v1, v2, p);
+    double w2 = edgeFunction(v2, v0, p);
 
     return (w0 >= 0 && w1 >= 0 && w2 >= 0) || (w0 <= 0 && w1 <= 0 && w2 <= 0);
 }
 
-double BoundingProxy::IntersectTriangleX(MPoint v0, MPoint v1, MPoint v2, double y, double z) {
+double BoundingProxy::intersectTriangleX(MPoint v0, MPoint v1, MPoint v2, double y, double z) {
     // Triangle plane equation: Ax + By + Cz + D = 0
-    MVector n_ei_yz = CrossProduct(v1 - v0, v2 - v0);
+    MVector n_ei_yz = crossProduct(v1 - v0, v2 - v0);
     double d_ei_yz = -n_ei_yz * v0;
 
     // Solve for x: x = (-D - By - Cz) / A
@@ -572,7 +802,7 @@ double BoundingProxy::IntersectTriangleX(MPoint v0, MPoint v1, MPoint v2, double
     return (-d_ei_yz - n_ei_yz.y * y - n_ei_yz.z * z) / n_ei_yz.x;
 }
 
-MStatus BoundingProxy::SelectMesh() {
+MStatus BoundingProxy::selectMesh() {
     MSelectionList selection;
     MStatus status = selection.add(meshName);
 
@@ -597,7 +827,7 @@ MStatus BoundingProxy::SelectMesh() {
     return MS::kSuccess;
 }
 
-void BoundingProxy::ShowVoxel(vector<vector<vector<bool>>> grid, MString name) {
+void BoundingProxy::showVoxel(vector<vector<vector<bool>>> grid, MString name) {
     int res = (int) grid.size();
     MString deleteGroupCmd =
         "if (`objExists " + name + "`) { "

@@ -6,9 +6,10 @@ F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\G
 F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\GenericPacketMathFunctions.h(1881,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
 F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\SkewSymmetricMatrix3.h(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
      Creating library F:\document\University\CIS 660\Project\VoMoBo\x64\Release\VoMoBo.lib and object F:\document\University\CIS 660\Project\VoMoBo\x64\Release\VoMoBo.exp
+LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
   Generating code
-  2 of 1719 functions ( 0.1%) were compiled, the rest were copied from previous compilation.
+  4 of 3528 functions ( 0.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    21 functions had inline decision re-evaluated but remain unchanged
+    96 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   VoMoBo.vcxproj -> F:\document\University\CIS 660\Project\VoMoBo\x64\Release\VoMoBo.mll
