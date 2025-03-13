@@ -110,102 +110,114 @@ void BoundingProxy::computeQuadricMatrices() {
 
 // CQEM based-on "Bounding Proxies for Shape Approximation Supplemental Materials"
 double BoundingProxy::computeCollapseCost(Quadric& Q0, Quadric& Q1, Eigen::Vector3d& v_opt, int v0, int v1) {
-    vector<Triangle> triangles;
-    for (int i = 0; i < F.rows(); i++) {
-        int v0_idx = F(i, 0);
-        int v1_idx = F(i, 1);
-        int v2_idx = F(i, 2);
+    //// CQEM
+    //vector<Triangle> triangles;
+    //for (int i = 0; i < F.rows(); i++) {
+    //    int v0_idx = F(i, 0);
+    //    int v1_idx = F(i, 1);
+    //    int v2_idx = F(i, 2);
 
-        // 只考虑包含 v0 或 v1 的三角形
-        if (v0_idx == v0 || v1_idx == v0 || v2_idx == v0 ||
-            v0_idx == v1 || v1_idx == v1 || v2_idx == v1) {
+    //    // 只考虑包含 v0 或 v1 的三角形
+    //    if (v0_idx == v0 || v1_idx == v0 || v2_idx == v0 ||
+    //        v0_idx == v1 || v1_idx == v1 || v2_idx == v1) {
 
-            Eigen::Vector3d v0_pos = V.row(v0_idx).transpose();
-            Eigen::Vector3d v1_pos = V.row(v1_idx).transpose();
-            Eigen::Vector3d v2_pos = V.row(v2_idx).transpose();
+    //        Eigen::Vector3d v0_pos = V.row(v0_idx).transpose();
+    //        Eigen::Vector3d v1_pos = V.row(v1_idx).transpose();
+    //        Eigen::Vector3d v2_pos = V.row(v2_idx).transpose();
 
-            Eigen::Vector3d normal = (v1_pos - v0_pos).cross(v2_pos - v0_pos);
-            normal.normalize();
+    //        Eigen::Vector3d normal = (v1_pos - v0_pos).cross(v2_pos - v0_pos);
+    //        normal.normalize();
 
-            double d = -normal.dot(v0_pos);
+    //        double d = -normal.dot(v0_pos);
 
-            triangles.push_back(Triangle{v0_pos, v1_pos, v2_pos, normal, d});
-        }
-    }
+    //        triangles.push_back(Triangle{v0_pos, v1_pos, v2_pos, normal, d});
+    //    }
+    //}
 
+    //// 使用完整的 4x4 Quadric 矩阵
+    //Eigen::Matrix4d Q4x4 = Q0.Q + Q1.Q;
+
+    //// 检查 Q 是否是正定的
+    //if (Q4x4.fullPivLu().rank() < 4) {
+    //    return std::numeric_limits<double>::infinity();
+    //}
+
+    //// QP 变量（4维）
+    //int num_constraints = (int) triangles.size();
+    //Eigen::MatrixXd A(num_constraints, 4);
+    //Eigen::VectorXd b(num_constraints);
+
+    //// 构造 A 和 b 矩阵
+    //for (int i = 0; i < num_constraints; i++) {
+    //    A.row(i).head<3>() = triangles[i].normal.transpose();
+    //    A(i, 3) = triangles[i].d;
+    //    b(i) = 0;
+    //}
+
+    //// qpOASES 变量
+    //qpOASES::SQProblem qp(4, num_constraints);  // 4 维变量（齐次坐标），num_constraints 个不等式约束
+    //qpOASES::Options options;
+    //options.setToMPC();
+    //options.printLevel = qpOASES::PL_LOW;
+    //qp.setOptions(options);
+
+    //// 目标函数 H (对称矩阵) 和 g
+    //qpOASES::real_t H[16], g[4] = {0, 0, 0, 0};  // g 是零向量
+    //for (int i = 0; i < 4; i++) {
+    //    for (int j = 0; j < 4; j++) {
+    //        H[i * 4 + j] = Q4x4(i, j);
+    //    }
+    //}
+
+    //// 线性不等式约束
+    //vector<qpOASES::real_t> A_qp(num_constraints * 4);
+    //vector<qpOASES::real_t> lb(num_constraints);
+    //vector<qpOASES::real_t> ub(num_constraints);
+    //qpOASES::real_t* A_qp_ptr = A_qp.data();
+    //qpOASES::real_t* lb_ptr = lb.data();
+    //qpOASES::real_t* ub_ptr = ub.data();
+    //for (int i = 0; i < num_constraints; i++) {
+    //    for (int j = 0; j < 4; j++) {
+    //        A_qp[i * 4 + j] = A(i, j);
+    //    }
+    //    lb[i] = 0;
+    //    ub[i] = qpOASES::INFTY;
+    //}
+
+    //// 初始化求解
+    //int nWSR = 100;
+    //qp.init(H, g, A_qp_ptr, nullptr, nullptr, lb_ptr, ub_ptr, nWSR);
+
+    //// 结果
+    //qpOASES::real_t v_opt_qp[4];
+    //qp.getPrimalSolution(v_opt_qp);
+    //v_opt = Eigen::Vector3d(v_opt_qp[0], v_opt_qp[1], v_opt_qp[2]);  // 去掉齐次坐标
+
+    //// 计算最终的 cost
+    //Eigen::Vector4d v_opt_homogeneous(v_opt[0], v_opt[1], v_opt[2], 1);
+    //return v_opt_homogeneous.transpose() * Q4x4 * v_opt_homogeneous;
+    
+    // QEM
     // 使用完整的 4x4 Quadric 矩阵
     Eigen::Matrix4d Q4x4 = Q0.Q + Q1.Q;
-    /*Q4x4(3, 0) = 0;
-    Q4x4(3, 1) = 0;
-    Q4x4(3, 2) = 0;
-    Q4x4(3, 3) = 1;*/
 
-    // 检查 Q 是否是正定的
-    if (Q4x4.fullPivLu().rank() < 4) {
+    // 直接用 QEM 方式求解最优顶点 v_opt
+    Eigen::Matrix3d A = Q4x4.block<3, 3>(0, 0);
+    Eigen::Vector3d b = -Q4x4.block<3, 1>(0, 3);
+
+    // 检查 A 是否可逆
+    if (A.determinant() == 0) {
+        v_opt = (V.row(v0) + V.row(v1)) / 2; // 退化情况，使用中点
         return std::numeric_limits<double>::infinity();
     }
 
-    // QP 变量（4维）
-    int num_constraints = (int) triangles.size();
-    Eigen::MatrixXd A(num_constraints, 4);
-    Eigen::VectorXd b(num_constraints);
+    v_opt = A.inverse() * b;
 
-    // 构造 A 和 b 矩阵
-    for (int i = 0; i < num_constraints; i++) {
-        A.row(i).head<3>() = triangles[i].normal.transpose();
-        A(i, 3) = triangles[i].d;
-        b(i) = 0;
-    }
-
-    // qpOASES 变量
-    qpOASES::SQProblem qp(4, num_constraints);  // 4 维变量（齐次坐标），num_constraints 个不等式约束
-    qpOASES::Options options;
-    options.setToMPC();
-    options.printLevel = qpOASES::PL_LOW;
-    qp.setOptions(options);
-
-    // 目标函数 H (对称矩阵) 和 g
-    qpOASES::real_t H[16], g[4] = {0, 0, 0, 0};  // g 是零向量
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            H[i * 4 + j] = Q4x4(i, j);
-        }
-    }
-
-    // 线性不等式约束
-    vector<qpOASES::real_t> A_qp(num_constraints * 4);
-    vector<qpOASES::real_t> lb(num_constraints);
-    vector<qpOASES::real_t> ub(num_constraints);
-    qpOASES::real_t* A_qp_ptr = A_qp.data();
-    qpOASES::real_t* lb_ptr = lb.data();
-    qpOASES::real_t* ub_ptr = ub.data();
-    for (int i = 0; i < num_constraints; i++) {
-        for (int j = 0; j < 4; j++) {
-            A_qp[i * 4 + j] = A(i, j);
-        }
-        lb[i] = 0;
-        ub[i] = qpOASES::INFTY;
-    }
-
-    // 初始化求解
-    int nWSR = 100;
-    qp.init(H, g, A_qp_ptr, nullptr, nullptr, lb_ptr, ub_ptr, nWSR);
-
-    // 结果
-    qpOASES::real_t v_opt_qp[4];
-    qp.getPrimalSolution(v_opt_qp);
-    v_opt = Eigen::Vector3d(v_opt_qp[0], v_opt_qp[1], v_opt_qp[2]);  // 去掉齐次坐标
-
-    // 计算最终的 cost
+    // 计算 QEM 误差 cost
     Eigen::Vector4d v_opt_homogeneous(v_opt[0], v_opt[1], v_opt[2], 1);
-    MString costMessage = "Cost: " + MString() + v_opt_homogeneous.transpose() * Q4x4 * v_opt_homogeneous;
-    MGlobal::displayInfo(costMessage);
+    double cost = v_opt_homogeneous.transpose() * Q4x4 * v_opt_homogeneous;
 
-    MString vOptMessage = "v_opt: (" + MString() + v_opt_qp[0] + ", " +
-        MString() + v_opt_qp[1] + ", " +
-        MString() + v_opt_qp[2] + ")";
-    MGlobal::displayInfo(vOptMessage);
-    return v_opt_homogeneous.transpose() * Q4x4 * v_opt_homogeneous;
+    return cost;
 }
 
 // Prevent collapse of an edge e = (v0, v1) for which ||v0 - v1|| > 4 * min(S[v0], S[v1])
@@ -275,9 +287,7 @@ void BoundingProxy::performCollapse(EdgeCollapse& ec) {
             Eigen::Vector3d v_new_opt;
             double cost = computeCollapseCost(quadrics[a], quadrics[b], v_new_opt, a, b);
 
-            //if (cost < std::numeric_limits<double>::infinity()) {
-            //    newQueue.push({a, b, cost, v_new_opt});
-            //}
+            newQueue.push({a, b, cost, v_new_opt});
         }
     }
     collapseQueue.swap(newQueue);
@@ -304,7 +314,7 @@ void BoundingProxy::simplifyMesh() {
         }
     }
 
-    while (!collapseQueue.empty()) {
+    while (!collapseQueue.empty() && F.size() > 300) {
         EdgeCollapse ec = collapseQueue.top();
         collapseQueue.pop();
 
