@@ -21,7 +21,15 @@
 #include <igl/copyleft/marching_cubes.h>
 #include <Eigen/Dense>
 #include <qpOASES.hpp>
+#include <OpenMesh/Core/IO/MeshIO.hh>
+#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
+#include <OpenMesh/Tools/Decimater/DecimaterT.hh>
+#include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
 using namespace std;
+
+typedef OpenMesh::TriMesh_ArrayKernelT<>  MyMesh;
+typedef OpenMesh::Decimater::DecimaterT<MyMesh> Decimater;
+typedef OpenMesh::Decimater::ModQuadricT<MyMesh>::Handle HModQuadric;
 
 constexpr double EPSILON = 1e-6;
 
@@ -102,11 +110,11 @@ public:
     void erosionCPU();
     void cubeMarching();
     void createMayaMesh(MString name);
-    void computeQuadricMatrices();
-    double computeCollapseCost(Quadric& Q0, Quadric& Q1, Eigen::Vector3d& v_opt, int v0, int v1);
-    void simplifyMesh();
-    bool edgeLengthExceedsThreshold(int v0, int v1);
+    void simplifyMesh(MString SE);
+    /*bool edgeLengthExceedsThreshold(int v0, int v1);
     void performCollapse(EdgeCollapse& ec);
+    void computeQuadricMatrices();
+    double computeCollapseCost(Quadric& Q0, Quadric& Q1, Eigen::Vector3d& v_opt, int v0, int v1);*/
 };
 
 #endif // BOUNDING_PROXY_H
