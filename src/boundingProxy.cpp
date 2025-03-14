@@ -48,7 +48,6 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             outputG = E;
             // Compute Mesh C
             cubeMarching();
-            createMayaMesh("cube");
             // CQEM on C
             simplifyMesh();
             // Show Mesh C
@@ -206,12 +205,12 @@ double BoundingProxy::computeCollapseCost(Quadric& Q0, Quadric& Q1, Eigen::Vecto
     Eigen::Vector3d b = -Q4x4.block<3, 1>(0, 3);
 
     // 检查 A 是否可逆
-    if (A.determinant() == 0) {
-        v_opt = (V.row(v0) + V.row(v1)) / 2; // 退化情况，使用中点
-        return std::numeric_limits<double>::infinity();
+    if (A.fullPivLu().rank() < 3) {
+        // v_opt = (V.row(v0) + V.row(v1)) / 2; // 退化情况，使用中点
+        return numeric_limits<double>::infinity();
     }
 
-    v_opt = A.inverse() * b;
+    v_opt = A.ldlt().solve(b);
 
     // 计算 QEM 误差 cost
     Eigen::Vector4d v_opt_homogeneous(v_opt[0], v_opt[1], v_opt[2], 1);
@@ -243,7 +242,7 @@ bool BoundingProxy::edgeLengthExceedsThreshold(int v0, int v1) {
     double scale_v0 = S[v0x][v0y][v0z];
     double scale_v1 = S[v1x][v1y][v1z];
 
-    return (p0 - p1).norm() > 4 * std::min(scale_v0, scale_v1);
+    return pow(v0x - v1x, 2.0) + pow(v0y - v1y, 2.0) + pow(v0z - v1z, 2.0) > 4 * std::min(scale_v0, scale_v1);
 }
 
 void BoundingProxy::performCollapse(EdgeCollapse& ec) {
@@ -287,7 +286,9 @@ void BoundingProxy::performCollapse(EdgeCollapse& ec) {
             Eigen::Vector3d v_new_opt;
             double cost = computeCollapseCost(quadrics[a], quadrics[b], v_new_opt, a, b);
 
-            newQueue.push({a, b, cost, v_new_opt});
+            if (cost < numeric_limits<double>::infinity()) {
+                newQueue.push({a, b, cost, v_new_opt});
+            }
         }
     }
     collapseQueue.swap(newQueue);
@@ -310,11 +311,14 @@ void BoundingProxy::simplifyMesh() {
             Eigen::Vector3d v_opt;
             double cost = computeCollapseCost(quadrics[v0], quadrics[v1], v_opt, v0, v1);
 
-            collapseQueue.push({v0, v1, cost, v_opt});
+            
+            if (cost < numeric_limits<double>::infinity()) {
+                collapseQueue.push({v0, v1, cost, v_opt});
+            }
         }
     }
 
-    while (!collapseQueue.empty() && F.size() > 300) {
+    while (!collapseQueue.empty()) {
         EdgeCollapse ec = collapseQueue.top();
         collapseQueue.pop();
 
