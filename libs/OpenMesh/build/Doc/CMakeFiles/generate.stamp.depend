@@ -1,0 +1,6 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-3.30/Modules/FindDoxygen.cmake
+C:/Program Files/CMake/share/cmake-3.30/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.30/Modules/FindPackageMessage.cmake
+F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/Doc/CMakeLists.txt
+F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/cmake/ACGDoxygen.cmake

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Apps\VDProgMesh\mkbalancedpm\mkbalancedpm.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Apps\VDProgMesh\mkbalancedpm\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{7E56D1E5-1FD6-3004-A07C-A168A2E87E4D}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

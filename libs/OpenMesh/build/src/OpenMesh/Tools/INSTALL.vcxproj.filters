@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\CMakeFiles\2713d0f165e82fc31226236418b91398\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{6B7CA5EA-23F8-3FF1-84AF-B471D02CB3B5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
