@@ -111,10 +111,6 @@ public:
     void cubeMarching();
     void createMayaMesh(MString name);
     void simplifyMesh(MString SE);
-    /*bool edgeLengthExceedsThreshold(int v0, int v1);
-    void performCollapse(EdgeCollapse& ec);
-    void computeQuadricMatrices();
-    double computeCollapseCost(Quadric& Q0, Quadric& Q1, Eigen::Vector3d& v_opt, int v0, int v1);*/
 };
 
 #endif // BOUNDING_PROXY_H
