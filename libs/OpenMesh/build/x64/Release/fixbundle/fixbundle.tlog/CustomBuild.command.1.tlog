@@ -1,0 +1,20 @@
+^F:\DOCUMENT\UNIVERSITY\CIS 660\PROJECT\VOMOBO\LIBS\OPENMESH\BUILD\CMAKEFILES\85998319795703B44B6EA6ACE54FED6D\FIXBUNDLE.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -P "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/fixbundle.win.cmake"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^F:\DOCUMENT\UNIVERSITY\CIS 660\PROJECT\VOMOBO\LIBS\OPENMESH\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SF:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh" "-BF:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build" --check-stamp-file "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

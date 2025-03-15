@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ProjectOutputs>
+    <ProjectOutput>
+      <FullPath>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\x64\Release\ZERO_CHECK</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Apps\VDProgMesh\Analyzer\Release\Analyzer.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Apps\Dualizer\Release\Dualizer.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Apps\Smoothing\Release\Smoothing.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Apps\Subdivider\commandlineAdaptiveSubdivider\Release\commandlineAdaptiveSubdivider.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Apps\Decimating\commandlineDecimater\Release\commandlineDecimater.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Apps\Subdivider\commandlineSubdivider\Release\commandlineSubdivider.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Apps\mconvert\Release\mconvert.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Apps\VDProgMesh\mkbalancedpm\Release\mkbalancedpm.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\x64\Release\fixbundle</FullPath>
+    </ProjectOutput>
+  </ProjectOutputs>
+  <ContentFiles />
+  <SatelliteDlls />
+  <NonRecipeFileRefs />
+</Project>

@@ -1,0 +1,431 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0E0FF786-0D95-39CC-AF76-F918182B6DBD}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>OpenMeshTools</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Tools\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">OpenMeshTools.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">OpenMeshToolsd</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Tools\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">OpenMeshTools.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">OpenMeshTools</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Tools\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">OpenMeshTools.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">OpenMeshTools</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Tools\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">OpenMeshTools.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">OpenMeshTools</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.lib</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;INCLUDE_TEMPLATES;_USE_MATH_DEFINES;NOMINMAX;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;INCLUDE_TEMPLATES;_USE_MATH_DEFINES;NOMINMAX;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/src/OpenMesh/Tools/Debug/OpenMeshToolsd.lib" "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/Build/lib/OpenMeshToolsd.lib"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;INCLUDE_TEMPLATES;_USE_MATH_DEFINES;NOMINMAX;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;INCLUDE_TEMPLATES;_USE_MATH_DEFINES;NOMINMAX;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/src/OpenMesh/Tools/Release/OpenMeshTools.lib" "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/Build/lib/OpenMeshTools.lib"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;INCLUDE_TEMPLATES;_USE_MATH_DEFINES;NOMINMAX;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;INCLUDE_TEMPLATES;_USE_MATH_DEFINES;NOMINMAX;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/src/OpenMesh/Tools/MinSizeRel/OpenMeshTools.lib" "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/Build/lib/OpenMeshTools.lib"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;INCLUDE_TEMPLATES;_USE_MATH_DEFINES;NOMINMAX;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;INCLUDE_TEMPLATES;_USE_MATH_DEFINES;NOMINMAX;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\..\..;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Core\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/src/OpenMesh/Tools/RelWithDebInfo/OpenMeshTools.lib" "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/Build/lib/OpenMeshTools.lib"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/src/OpenMesh/Tools/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SF:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh" "-BF:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build" --check-stamp-file "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/src/OpenMesh/Tools/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-3.30\Modules\AddFileDependencies.cmake;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\cmake\ACGCommon.cmake;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\cmake\ACGCompiler.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Tools\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/src/OpenMesh/Tools/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SF:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh" "-BF:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build" --check-stamp-file "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/src/OpenMesh/Tools/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-3.30\Modules\AddFileDependencies.cmake;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\cmake\ACGCommon.cmake;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\cmake\ACGCompiler.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Tools\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/src/OpenMesh/Tools/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SF:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh" "-BF:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build" --check-stamp-file "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/src/OpenMesh/Tools/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-3.30\Modules\AddFileDependencies.cmake;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\cmake\ACGCommon.cmake;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\cmake\ACGCompiler.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Tools\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/src/OpenMesh/Tools/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SF:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh" "-BF:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build" --check-stamp-file "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/build/src/OpenMesh/Tools/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-3.30\Modules\AddFileDependencies.cmake;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\cmake\ACGCommon.cmake;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\cmake\ACGCompiler.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Tools\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\Observer.cc" />
+    <ClCompile Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\Gnuplot.cc" />
+    <ClCompile Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\Timer.cc" />
+    <ClCompile Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\conio.cc" />
+    <ClCompile Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\VFront.cc" />
+    <ClCompile Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\VHierarchy.cc" />
+    <ClCompile Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\VHierarchyNodeIndex.cc" />
+    <ClCompile Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\VHierarchyWindow.cc" />
+    <ClCompile Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\ViewingParameters.cc" />
+    <ClCompile Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\getopt.c" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\BaseDecimaterT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\BaseDecimaterT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\CollapseInfoT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\DecimaterT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\DecimaterT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\McDecimaterT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\McDecimaterT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\MixedDecimaterT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\MixedDecimaterT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModAspectRatioT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModAspectRatioT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModBaseT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModEdgeLengthT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModEdgeLengthT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModHausdorffT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModHausdorffT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModIndependentSetsT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModNormalDeviationT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModNormalFlippingT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModProgMeshT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModProgMeshT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModQuadricT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModQuadricT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\ModRoundnessT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Decimater\Observer.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Dualizer\meshDualT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Smoother\JacobiLaplaceSmootherT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Smoother\JacobiLaplaceSmootherT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Smoother\LaplaceSmootherT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Smoother\LaplaceSmootherT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Smoother\SmootherT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Smoother\SmootherT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Smoother\smooth_mesh.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Adaptive\Composite\CompositeT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Adaptive\Composite\CompositeT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Adaptive\Composite\CompositeTraits.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Adaptive\Composite\RuleInterfaceT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Adaptive\Composite\RulesT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Adaptive\Composite\RulesT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Adaptive\Composite\Traits.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\Composite\CompositeT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\Composite\CompositeT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\Composite\CompositeTraits.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\CatmullClarkT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\CatmullClarkT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\CompositeLoopT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\CompositeSqrt3T.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\LongestEdgeT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\LoopT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\MidpointT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\ModifiedButterFlyT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\Sqrt3InterpolatingSubdividerLabsikGreinerT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\Sqrt3T.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Subdivider\Uniform\SubdividerT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\Config.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\GLConstAsString.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\Gnuplot.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\HeapT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\MeshCheckerT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\MeshCheckerT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\NumLimitsT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\StripifierT.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\StripifierT_impl.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\TestingFramework.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\Timer.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\Utils\conio.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\MeshTraits.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\StreamingDef.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\VFront.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\VHierarchy.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\VHierarchyNode.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\VHierarchyNodeIndex.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\VHierarchyWindow.hh" />
+    <ClInclude Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src\OpenMesh\Tools\VDPM\ViewingParameters.hh" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\ZERO_CHECK.vcxproj">
+      <Project>{94894E04-A9C9-3E4E-AFA0-437B0D1A6B54}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\src\OpenMesh\Core\OpenMeshCore.vcxproj">
+      <Project>{A554FED0-2F1C-31C8-8BCB-71F868F2BF15}</Project>
+      <Name>OpenMeshCore</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
