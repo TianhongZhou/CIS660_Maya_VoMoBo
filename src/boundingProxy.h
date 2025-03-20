@@ -18,6 +18,8 @@
 #include <unordered_map>
 #include <stack>
 #include <queue>
+#include <thread>
+#include <mutex>
 #include <igl/copyleft/marching_cubes.h>
 #include <Eigen/Dense>
 #include <qpOASES.hpp>
@@ -110,7 +112,7 @@ public:
     void erosionCPU();
     void cubeMarching();
     void createMayaMesh(MString name);
-    void simplifyMesh(MString SE);
+    void simplifyMesh(double maxError);
 };
 
 #endif // BOUNDING_PROXY_H

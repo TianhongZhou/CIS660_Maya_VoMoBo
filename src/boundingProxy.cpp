@@ -28,6 +28,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         MString SE = args.asString(3);
         double baseScale = args.asDouble(4);
         meshName = args.asString(5);
+        double maxError = args.asDouble(6);
 
         selectMesh();
 
@@ -49,7 +50,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             // Compute Mesh C
             cubeMarching();
             // CQEM on C
-            simplifyMesh(SE);
+            simplifyMesh(maxError);
             // Show Mesh C
             createMayaMesh("final");
         }
@@ -88,7 +89,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     return MS::kSuccess;
 }
 
-void BoundingProxy::simplifyMesh(MString SE) {
+void BoundingProxy::simplifyMesh(double maxError) {
     MyMesh mesh;
 
     vector<MyMesh::VertexHandle> vHandles;
@@ -105,8 +106,7 @@ void BoundingProxy::simplifyMesh(MString SE) {
     HModQuadric modQuadric;
     decimater.add(modQuadric);
 
-    double errorThreshold = SE == "cube" ? 1e-2 : 1e-3;
-    decimater.module(modQuadric).set_max_err(1e-1);
+    decimater.module(modQuadric).set_max_err(maxError * 1e-2);
 
     decimater.initialize();
     double minX = V.col(0).minCoeff();
@@ -536,68 +536,50 @@ void BoundingProxy::voxelizationCPU(int res) {
     MIntArray triangleCounts, triangleIndices;
     meshFn->getTriangles(triangleCounts, triangleIndices);
 
-    // Get bouding box of meshFn
-    MPoint min, max;
-    min = meshFn->boundingBox().min();
-    max = meshFn->boundingBox().max();
+    // Get bounding box
+    MPoint min = meshFn->boundingBox().min();
+    MPoint max = meshFn->boundingBox().max();
 
     double minX = min.x, minY = min.y, minZ = min.z;
     double maxX = max.x, maxY = max.y, maxZ = max.z;
     deltaP = MPoint((maxX - minX) / res, (maxY - minY) / res, (maxZ - minZ) / res);
 
     double scale = res * res * 5.0;
-    minX *= scale;
-    minY *= scale;
-    minZ *= scale;
-    maxX *= scale;
-    maxY *= scale;
-    maxZ *= scale;
+    minX *= scale; minY *= scale; minZ *= scale;
+    maxX *= scale; maxY *= scale; maxZ *= scale;
 
     for (unsigned int i = 0; i < vertices.length(); i++) {
         vertices[i] *= scale;
     }
 
-    // Iterate through all triangles
+    // Triangle processing function
     for (unsigned int i = 0; i < triangleIndices.length(); i += 3) {
         MPoint v0 = vertices[triangleIndices[i]];
         MPoint v1 = vertices[triangleIndices[i + 1]];
         MPoint v2 = vertices[triangleIndices[i + 2]];
 
-        // Convert to voxel space
         int y0 = world2Voxel(v0.y, minY, maxY, res);
         int z0 = world2Voxel(v0.z, minZ, maxZ, res);
-
         int y1 = world2Voxel(v1.y, minY, maxY, res);
         int z1 = world2Voxel(v1.z, minZ, maxZ, res);
-
         int y2 = world2Voxel(v2.y, minY, maxY, res);
         int z2 = world2Voxel(v2.z, minZ, maxZ, res);
 
-        // Compute bounding box in voxel space
         int minY_vox = std::min({ y0, y1, y2 });
         int maxY_vox = std::max({ y0, y1, y2 });
         int minZ_vox = std::min({ z0, z1, z2 });
         int maxZ_vox = std::max({ z0, z1, z2 });
 
-        // Iterate over yz voxel columns
         for (int y = minY_vox; y <= maxY_vox; y++) {
             for (int z = minZ_vox; z <= maxZ_vox; z++) {
-                double vy = voxel2World(y, minY, maxY, res);
-                double vz = voxel2World(z, minZ, maxZ, res);
-                vy += deltaP.y / 2.0;
-                vz += deltaP.z / 2.0;
-
-                // Check if voxel column is inside the triangle projection
+                double vy = voxel2World(y, minY, maxY, res) + deltaP.y / 2.0;
+                double vz = voxel2World(z, minZ, maxZ, res) + deltaP.z / 2.0;
                 if (!insideTriangleYZ(v0, v1, v2, vy, vz)) continue;
 
-                // Compute intersection with triangle plane
                 double xIntersect = intersectTriangleX(v0, v1, v2, vy, vz);
-                if (xIntersect == std::numeric_limits<double>::max()) {
-                    continue;
-                }
+                if (xIntersect == numeric_limits<double>::max()) continue;
                 int xIntersectVox = world2Voxel(xIntersect, minX, maxX, res);
 
-                // Flip all voxels beyond the intersection
                 for (int x = xIntersectVox; x < res; x++) {
                     G[x][y][z] = !G[x][y][z];
                 }

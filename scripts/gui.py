@@ -57,19 +57,21 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.edit_scale_checkbox = QtWidgets.QCheckBox("Edit Scale Field")
         layout.addWidget(self.edit_scale_checkbox)
 
-        # Brush Size Slider
+        # Brush Size
         layout.addWidget(QtWidgets.QLabel("Brush Size:"))
         self.brush_size_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.brush_size_slider.setRange(1, 3000)
         self.brush_size_slider.setValue(10)
         layout.addWidget(self.brush_size_slider)
 
-        # Brush Step Slider
-        layout.addWidget(QtWidgets.QLabel("Brush Step:"))
-        self.brush_step_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.brush_step_slider.setRange(1, 30)
-        self.brush_step_slider.setValue(2)
-        layout.addWidget(self.brush_step_slider)
+        # Target Scale
+        layout.addWidget(QtWidgets.QLabel("Target Scale:"))
+        self.target_scale_spinbox = QtWidgets.QDoubleSpinBox()
+        self.target_scale_spinbox.setRange(0.1, 99.9)
+        self.target_scale_spinbox.setValue(2.0)
+        self.target_scale_spinbox.setDecimals(2)
+        self.target_scale_spinbox.setSingleStep(0.1)
+        layout.addWidget(self.target_scale_spinbox)
 
         # Brush Mode (Radio Buttons)
         layout.addWidget(QtWidgets.QLabel("Brush Mode:"))
@@ -111,11 +113,21 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.dilation_shape_group = QtWidgets.QButtonGroup(self)
         self.sphere_radio = QtWidgets.QRadioButton("Sphere SE")
         self.cube_radio = QtWidgets.QRadioButton("Cube SE")
-        self.cube_radio.setChecked(True)
+        self.sphere_radio.setChecked(True)
         self.dilation_shape_group.addButton(self.sphere_radio)
         self.dilation_shape_group.addButton(self.cube_radio)
         layout.addWidget(self.sphere_radio)
         layout.addWidget(self.cube_radio)
+
+        # Max Error Spinbox (scaled by 1e-2)
+        layout.addWidget(QtWidgets.QLabel("Meshing"))
+        self.max_err_spinbox = QtWidgets.QDoubleSpinBox()
+        self.max_err_spinbox.setRange(0.001, 99.999)
+        self.max_err_spinbox.setDecimals(3)
+        self.max_err_spinbox.setSingleStep(0.001)
+        self.max_err_spinbox.setValue(5.000)
+        layout.addWidget(QtWidgets.QLabel("Max Error (x0.01):"))
+        layout.addWidget(self.max_err_spinbox)
 
         # Button Generate
         self.generate_button = QtWidgets.QPushButton("Generate")
@@ -128,7 +140,6 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.setLayout(layout)
 
         self.resolution_dropdown.currentIndexChanged.connect(self.auto_action)
-        # self.base_scale_spinbox.valueChanged.connect(self.auto_action)
         self.cpu_radio.toggled.connect(self.auto_action)
         self.gpu_radio.toggled.connect(self.auto_action)
         self.scale_field_button.clicked.connect(self.auto_action)
@@ -181,7 +192,8 @@ class GeneratePluginUI(QtWidgets.QWidget):
         seMode = "cube" if self.cube_radio.isChecked() else "sphere"
         baseScale = self.base_scale_spinbox.value()
         self.action_executed = True
-        cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}", "{seMode}", {baseScale}, "{self.selected_object}")')
+        maxError = self.max_err_spinbox.value()
+        cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}", "{seMode}", {baseScale}, "{self.selected_object}", {maxError})')
 
 def show():
     global generate_plugin_ui
