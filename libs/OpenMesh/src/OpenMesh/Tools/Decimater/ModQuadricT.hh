@@ -182,7 +182,7 @@ public: // inherited
     }
 
     // Compute A and b for QP
-    int num_constraints = triangle_normals.size();
+    int num_constraints = (int) triangle_normals.size();
     Eigen::MatrixXd A(num_constraints, 4);
 
     for (int i = 0; i < num_constraints; i++) {
@@ -191,7 +191,8 @@ public: // inherited
     }
 
     // qpOASES variables
-    qpOASES::SQProblem qp(4, num_constraints);
+    int total_constraints = num_constraints + 1;
+    qpOASES::SQProblem qp(4, total_constraints);
     qpOASES::Options options;
     options.setToMPC();
     options.printLevel = qpOASES::PL_LOW;
@@ -205,8 +206,6 @@ public: // inherited
     }
 
     // Constraints
-    int total_constraints = num_constraints + 1;
-
     std::vector<qpOASES::real_t> A_qp(total_constraints * 4);
     std::vector<qpOASES::real_t> lb(total_constraints);
     std::vector<qpOASES::real_t> ub(total_constraints);
@@ -239,10 +238,22 @@ public: // inherited
     qp.getPrimalSolution(v_opt_qp);
 
     // Compute final cost
-    // const_cast<OpenMesh::VectorT<float, 3>&>(_ci.p1) = OpenMesh::VectorT<float, 3>(v_opt_qp[0], v_opt_qp[1], v_opt_qp[2]);
-    double err = q(_ci.p1);
+    
+    // CQEM only
+    const_cast<OpenMesh::VectorT<float, 3>&>(_ci.p1) = OpenMesh::VectorT<float, 3>(v_opt_qp[0], v_opt_qp[1], v_opt_qp[2]);
+    double err_qem = q(_ci.p1);
 
-    return float((err < max_err_) ? err : float(Base::ILLEGAL_COLLAPSE));
+    // Combine both CQEM and QEM
+    //double err_qem = q(_ci.p1);
+    //OpenMesh::VectorT<float, 3> cqem_p(v_opt_qp[0], v_opt_qp[1], v_opt_qp[2]);
+    //double err_cqem = q(cqem_p);
+
+    //if (err_cqem < err_qem) {
+    //    const_cast<OpenMesh::VectorT<float, 3>&>(_ci.p1) = cqem_p;
+    //    return float(err_cqem < max_err_ ? err_cqem : float(Base::ILLEGAL_COLLAPSE));
+    //}
+
+    return float(err_qem < max_err_ ? err_qem : float(Base::ILLEGAL_COLLAPSE));
   }
 
 

@@ -128,8 +128,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions> NT_PLUGIN</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>F:\software\Maya\Maya2025\include;F:\document\University\CIS 660\Project\VoMoBo\libs</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>F:\software\Maya\Maya2025\include;F:\document\University\CIS 660\Project\VoMoBo\libs;F:\document\University\CIS 660\Project\VoMoBo\libs\qpOASES\include;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -137,8 +137,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)$(ProjectName).mll</OutputFile>
-      <AdditionalLibraryDirectories>F:\software\Maya\Maya2025\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaUI.lib;OpenMayaAnim.lib;OpenMayaFX.lib;OpenMayaRender.lib;Image.lib;opengl32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\software\Maya\Maya2025\lib;F:\document\University\CIS 660\Project\VoMoBo\libs\qpOASES\build\libs\Release;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\Build\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaUI.lib;OpenMayaAnim.lib;OpenMayaFX.lib;OpenMayaRender.lib;Image.lib;opengl32.lib;qpOASES.lib;OpenMeshCore.lib;OpenMeshTools.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

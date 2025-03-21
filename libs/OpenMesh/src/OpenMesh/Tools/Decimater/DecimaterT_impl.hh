@@ -201,8 +201,6 @@ size_t DecimaterT<Mesh>::decimate(double minX, double maxX, double minY, double 
     // setup collapse info
     CollapseInfo ci(mesh_, v0v1);
 
-    double edge_length = (mesh_.point(ci.v0) - mesh_.point(ci.v1)).norm();
-
     auto world2Voxel = [](double w, double min, double max, int res) -> int {
         int result = static_cast<int>((w - min) / (max - min) * (res - 1));
         if (result < 0) result = 0;
@@ -220,6 +218,8 @@ size_t DecimaterT<Mesh>::decimate(double minX, double maxX, double minY, double 
 
     double scale_v0 = S[v0x][v0y][v0z];
     double scale_v1 = S[v1x][v1y][v1z];
+
+    double edge_length = sqrt(pow(v0x - v1x, 2) + pow(v0y - v1y, 2) + pow(v0z - v1z, 2));
 
     if (edge_length > 4 * std::min(scale_v0, scale_v1))
         continue;
