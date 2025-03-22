@@ -1,12 +1,4 @@
-﻿  VoMoBo.vcxproj -> F:\document\University\CIS 660\Project\VoMoBo\x64\Release\VoMoBo.mll
-﻿  MayaPlugin.cpp
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\MathFunctions.h(781,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\Half.h(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\BFloat16.h(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\GenericPacketMathFunctions.h(1288,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\GenericPacketMathFunctions.h(1881,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\SkewSymmetricMatrix3.h(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-  boundingProxy.cpp
+﻿  boundingProxy.cpp
 F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\MathFunctions.h(781,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
 F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\Half.h(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
 F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\BFloat16.h(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
