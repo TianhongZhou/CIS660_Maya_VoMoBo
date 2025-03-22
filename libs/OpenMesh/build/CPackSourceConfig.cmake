@@ -22,7 +22,7 @@ set(CPACK_IGNORE_FILES "\\.#;/#;.*~;/\\.git;/\\.svn;F:/document/University/CIS 6
 set(CPACK_INNOSETUP_ARCHITECTURE "x64")
 set(CPACK_INSTALLED_DIRECTORIES "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh;/")
 set(CPACK_INSTALL_CMAKE_PROJECTS "")
-set(CPACK_INSTALL_PREFIX "C:/Program Files (x86)/OpenMesh")
+set(CPACK_INSTALL_PREFIX "C:/Program Files/OpenMesh")
 set(CPACK_MODULE_PATH "F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/cmake;F:/document/University/CIS 660/Project/VoMoBo/libs/OpenMesh/cmake")
 set(CPACK_NSIS_DISPLAY_NAME "OpenMesh v8.1")
 set(CPACK_NSIS_DISPLAY_NAME_SET "TRUE")

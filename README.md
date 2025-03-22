@@ -26,25 +26,27 @@ The goal is to faithfully reproduce and demonstrate the algorithm described in t
 
 2. Voxelization - Convert mesh M into a voxel grid G at the specified resolution. This step uses triangle-parallel solid voxelization, based on the method introduced in [Fast Parallel Surface and Solid Voxelization on GPUs](https://michael-schwarz.com/research/publ/files/vox-siga10.pdf) by Michael Schwarz and Hans-Peter Seidel.
 
-![Generate voxel grid]()
+![Generate voxel grid](imgs/voxelization.png)
 
-3. Mipmaping - Build a pyramid $hat{G}$ from the binary voxel grid G, enabling efficient multi-resolution operations.
+3. Mipmaping - Build a pyramid $\hat{G}$ from the binary voxel grid G, enabling efficient multi-resolution operations.
 
-![Generate pyramid]()
+![Generate pyramid](imgs/mipmap.png)
 
-4. Spatially Varying Dilation - Perform parallel spatially varying dilation D using hierarchical collision detection. This process simulates collisions between $hat{G}$ and a field of structuring elements (SEs) to produce locally adaptive dilation.
+4. Spatially Varying Dilation - Perform parallel spatially varying dilation D using hierarchical collision detection. This process simulates collisions between $\hat{G}$ and a field of structuring elements (SEs) to produce locally adaptive dilation.
 
-![Dilation using Sphere SE]()
+![Dilation using Sphere SE](imgs/sphereDilation.png)
 
-![Dilation using Cube SE]()
+![Dilation using Cube SE](imgs/cubeDilation.png)
 
-5. Scale-augmented pyramid - Extract the 6-connected contour from D and build a scale-augmented pyramid $hat{D_c}$, encoding both geometry and local scale information.
+5. Scale-augmented pyramid - Extract the 6-connected contour from D and build a scale-augmented pyramid $\hat{D_c}$, encoding both geometry and local scale information.
 
-![Scale-augmented pyramid]()
+![Scale-augmented pyramid](imgs/scaleAugmented.png)
 
 6. Spatially Varying Erosion - Apply spatially varying erosion to complete the morphological closing operator, generating grid E which represents the final closed shape.
 
-![Erosion]()
+![Symmetric Erosion](imgs/symmetricErosion.png)
+
+![Asymmetric Erosion](imgs/asymmetricErosion.png)
 
 7. Cube Marching - Use the cube marching algorithm (from libigl) on voxel grid E to extract a coarse mesh proxy.
 

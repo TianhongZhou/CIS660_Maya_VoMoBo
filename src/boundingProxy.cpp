@@ -29,6 +29,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         double baseScale = args.asDouble(4);
         meshName = args.asString(5);
         double maxError = args.asDouble(6);
+        MString simplifyMethod = args.asString(7);
 
         selectMesh();
 
@@ -50,7 +51,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             // Compute Mesh C
             cubeMarching();
             // CQEM on C
-            simplifyMesh(maxError);
+            simplifyMesh(maxError, simplifyMethod);
             // Show Mesh C
             createMayaMesh("final");
         }
@@ -78,33 +79,9 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         else {
             // TODO: GPU
         }
-        auto Gp = G;
-        int N = (int) G.size();
-        vector<MPoint> r = { {0,0,1}, {0,1,0}, {1,0,0}, {0,0,-1}, {0,-1,0}, {-1,0,0} };
-        Gp = G;
 
-        for (int x = 1; x < N - 1; x++) {
-            for (int y = 1; y < N - 1; y++) {
-                for (int z = 1; z < N - 1; z++) {
-                    if (G[x][y][z]) {
-                        bool flag = true;
-                        for (int i = 0; i < r.size(); i++) {
-                            MPoint p = MPoint(x, y, z) + r[i];
-                            if (!G[(int)p.x][(int)p.y][(int)p.z]) {
-                                Gp[x][y][z] = true;
-                                flag = false;
-                                break;
-                            }
-                        }
-                        if (flag) {
-                            Gp[x][y][z] = false;
-                        }
-                    }
-                }
-            }
-        }
         // Can show G, GHat[i], D, Dc, DcHat[i].first, E
-        showVoxel(Gp, "G");
+        showVoxel(E, "E");
     }
     else {
         MGlobal::displayWarning("Unknown command argument!");
@@ -114,7 +91,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     return MS::kSuccess;
 }
 
-void BoundingProxy::simplifyMesh(double maxError) {
+void BoundingProxy::simplifyMesh(double maxError, MString method) {
     MyMesh mesh;
 
     vector<MyMesh::VertexHandle> vHandles;
@@ -140,7 +117,7 @@ void BoundingProxy::simplifyMesh(double maxError) {
     double maxY = V.col(1).maxCoeff();
     double minZ = V.col(2).minCoeff();
     double maxZ = V.col(2).maxCoeff();
-    decimater.decimate(minX, maxX, minY, maxY, minZ, maxZ, S);
+    decimater.decimate(minX, maxX, minY, maxY, minZ, maxZ, S, string(method.asChar()));
 
     mesh.garbage_collection();
 

@@ -112,7 +112,7 @@ public:
     void erosionCPU();
     void cubeMarching();
     void createMayaMesh(MString name);
-    void simplifyMesh(double maxError);
+    void simplifyMesh(double maxError, MString method);
 };
 
 #endif // BOUNDING_PROXY_H
