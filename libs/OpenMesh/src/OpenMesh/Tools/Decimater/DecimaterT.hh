@@ -106,7 +106,7 @@ public:
    *       subsequent call to ArrayKernel::garbage_collection() is required.
    */
   size_t decimate(double minX, double maxX, double minY, double maxY, double minZ, double maxZ,
-      std::vector<std::vector<std::vector<double>>> S, size_t _n_collapses = 0);
+      std::vector<std::vector<std::vector<double>>> S, std::string method, size_t _n_collapses = 0);
 
   /**
    * @brief Decimate the mesh to a desired target vertex complexity.
@@ -182,7 +182,7 @@ public:
 private: //---------------------------------------------------- private methods
 
   /// Insert vertex in heap
-  void heap_vertex(VertexHandle _vh);
+  void heap_vertex(VertexHandle _vh, std::string method);
 
 private: //------------------------------------------------------- private data
 

@@ -96,6 +96,7 @@ struct CollapseInfoT {
     typename Mesh::FaceHandle fr; ///< Right face
     typename Mesh::VertexHandle vl; ///< Left vertex
     typename Mesh::VertexHandle vr; ///< Right vertex
+    std::string method;
     //@{
     /** Outer remaining halfedge of diamond spanned by \c v0, \c v1,
      *  \c vl, and \c vr

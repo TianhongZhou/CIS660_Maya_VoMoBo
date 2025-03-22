@@ -102,7 +102,7 @@ DecimaterT<Mesh>::~DecimaterT() {
 //-----------------------------------------------------------------------------
 
 template<class Mesh>
-void DecimaterT<Mesh>::heap_vertex(VertexHandle _vh) {
+void DecimaterT<Mesh>::heap_vertex(VertexHandle _vh, std::string method) {
   //   std::clog << "heap_vertex: " << _vh << std::endl;
 
   float prio, best_prio(FLT_MAX);
@@ -113,6 +113,7 @@ void DecimaterT<Mesh>::heap_vertex(VertexHandle _vh) {
   for (; voh_it.is_valid(); ++voh_it) {
     heh = *voh_it;
     CollapseInfo ci(mesh_, heh);
+    ci.method = method;
 
     if (this->is_collapse_legal(ci)) {
       prio = this->collapse_priority(ci);
@@ -149,7 +150,7 @@ void DecimaterT<Mesh>::heap_vertex(VertexHandle _vh) {
 //-----------------------------------------------------------------------------
 template<class Mesh>
 size_t DecimaterT<Mesh>::decimate(double minX, double maxX, double minY, double maxY, double minZ, double maxZ,
-    std::vector<std::vector<std::vector<double>>> S, size_t _n_collapses) {
+    std::vector<std::vector<std::vector<double>>> S, std::string method, size_t _n_collapses) {
 
   if (!this->is_initialized())
     return 0;
@@ -186,7 +187,7 @@ size_t DecimaterT<Mesh>::decimate(double minX, double maxX, double minY, double 
   for (v_it = mesh_.vertices_begin(); v_it != v_end; ++v_it) {
     heap_->reset_heap_position(*v_it);
     if (!mesh_.status(*v_it).deleted())
-      heap_vertex(*v_it);
+      heap_vertex(*v_it, method);
   }
 
   const bool update_normals = mesh_.has_face_normals();
@@ -201,28 +202,30 @@ size_t DecimaterT<Mesh>::decimate(double minX, double maxX, double minY, double 
     // setup collapse info
     CollapseInfo ci(mesh_, v0v1);
 
-    auto world2Voxel = [](double w, double min, double max, int res) -> int {
-        int result = static_cast<int>((w - min) / (max - min) * (res - 1));
-        if (result < 0) result = 0;
-        if (result > res - 1) result = res - 1;
-        return result;
-        };
+    if (method == "cqem") {
+        auto world2Voxel = [](double w, double min, double max, int res) -> int {
+            int result = static_cast<int>((w - min) / (max - min) * (res - 1));
+            if (result < 0) result = 0;
+            if (result > res - 1) result = res - 1;
+            return result;
+            };
 
-    int res = (int) S.size();
-    int v0x = world2Voxel(mesh_.point(ci.v0)[0], minX, maxX, res);
-    int v0y = world2Voxel(mesh_.point(ci.v0)[1], minY, maxY, res);
-    int v0z = world2Voxel(mesh_.point(ci.v0)[2], minZ, maxZ, res);
-    int v1x = world2Voxel(mesh_.point(ci.v1)[0], minX, maxX, res);
-    int v1y = world2Voxel(mesh_.point(ci.v1)[1], minY, maxY, res);
-    int v1z = world2Voxel(mesh_.point(ci.v1)[2], minZ, maxZ, res);
+        int res = (int)S.size();
+        int v0x = world2Voxel(mesh_.point(ci.v0)[0], minX, maxX, res);
+        int v0y = world2Voxel(mesh_.point(ci.v0)[1], minY, maxY, res);
+        int v0z = world2Voxel(mesh_.point(ci.v0)[2], minZ, maxZ, res);
+        int v1x = world2Voxel(mesh_.point(ci.v1)[0], minX, maxX, res);
+        int v1y = world2Voxel(mesh_.point(ci.v1)[1], minY, maxY, res);
+        int v1z = world2Voxel(mesh_.point(ci.v1)[2], minZ, maxZ, res);
 
-    double scale_v0 = S[v0x][v0y][v0z];
-    double scale_v1 = S[v1x][v1y][v1z];
+        double scale_v0 = S[v0x][v0y][v0z];
+        double scale_v1 = S[v1x][v1y][v1z];
 
-    double edge_length = sqrt(pow(v0x - v1x, 2) + pow(v0y - v1y, 2) + pow(v0z - v1z, 2));
+        double edge_length = sqrt(pow(v0x - v1x, 2) + pow(v0y - v1y, 2) + pow(v0z - v1z, 2));
 
-    if (edge_length > 4 * std::min(scale_v0, scale_v1))
-        continue;
+        if (edge_length > 4 * std::min(scale_v0, scale_v1))
+            continue;
+    }
 
     if (mesh_.n_faces() < 20) 
         continue;
@@ -259,7 +262,7 @@ size_t DecimaterT<Mesh>::decimate(double minX, double maxX, double minY, double 
     // update heap (former one ring of decimated vertex)
     for (s_it = support.begin(), s_end = support.end(); s_it != s_end; ++s_it) {
       assert(!mesh_.status(*s_it).deleted());
-      heap_vertex(*s_it);
+      heap_vertex(*s_it, method);
     }
 
     // notify observer and stop if the observer requests it
@@ -312,7 +315,7 @@ size_t DecimaterT<Mesh>::decimate_to_faces(size_t _nv, size_t _nf) {
   for (v_it = mesh_.vertices_begin(); v_it != v_end; ++v_it) {
     heap_->reset_heap_position(*v_it);
     if (!mesh_.status(*v_it).deleted())
-      heap_vertex(*v_it);
+      heap_vertex(*v_it, "null");
   }
 
   const bool update_normals = mesh_.has_face_normals();
@@ -366,7 +369,7 @@ size_t DecimaterT<Mesh>::decimate_to_faces(size_t _nv, size_t _nf) {
     // update heap (former one ring of decimated vertex)
     for (s_it = support.begin(), s_end = support.end(); s_it != s_end; ++s_it) {
       assert(!mesh_.status(*s_it).deleted());
-      heap_vertex(*s_it);
+      heap_vertex(*s_it, "null");
     }
 
     // notify observer and stop if the observer requests it
