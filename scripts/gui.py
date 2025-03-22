@@ -134,7 +134,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.generate_button.clicked.connect(self.generate_action)
 
         layout.addWidget(self.scale_field_button)
-        # layout.addWidget(self.voxel_button)
+        layout.addWidget(self.voxel_button)
         layout.addWidget(self.generate_button)
 
         self.setLayout(layout)

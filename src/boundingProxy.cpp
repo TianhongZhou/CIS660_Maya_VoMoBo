@@ -78,8 +78,33 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         else {
             // TODO: GPU
         }
+        auto Gp = G;
+        int N = (int) G.size();
+        vector<MPoint> r = { {0,0,1}, {0,1,0}, {1,0,0}, {0,0,-1}, {0,-1,0}, {-1,0,0} };
+        Gp = G;
+
+        for (int x = 1; x < N - 1; x++) {
+            for (int y = 1; y < N - 1; y++) {
+                for (int z = 1; z < N - 1; z++) {
+                    if (G[x][y][z]) {
+                        bool flag = true;
+                        for (int i = 0; i < r.size(); i++) {
+                            MPoint p = MPoint(x, y, z) + r[i];
+                            if (!G[(int)p.x][(int)p.y][(int)p.z]) {
+                                Gp[x][y][z] = true;
+                                flag = false;
+                                break;
+                            }
+                        }
+                        if (flag) {
+                            Gp[x][y][z] = false;
+                        }
+                    }
+                }
+            }
+        }
         // Can show G, GHat[i], D, Dc, DcHat[i].first, E
-        showVoxel(G, "G");
+        showVoxel(Gp, "G");
     }
     else {
         MGlobal::displayWarning("Unknown command argument!");
