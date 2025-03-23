@@ -50,13 +50,13 @@ The goal is to faithfully reproduce and demonstrate the algorithm described in t
 
 7. Cube Marching - Use the cube marching algorithm (from libigl) on voxel grid E to extract a coarse mesh proxy.
 
-![Cube marching]()
+![Cube marching](imgs/cubeMarching.png)
 
 8. Edge Collapse - Perform edge collapse-based simplification by combining classical Quadric Error Metrics (QEM, via OpenMesh) with linear constraints. This ensures local bounding conditions and upper-bounded edge lengths relative to the local scale field.
 
-![QEM result]()
+![QEM result](imgs/qem.png)
 
-![CQEM result]()
+![CQEM result](imgs/cqem.png)
 
 ## Features
 
