@@ -22,7 +22,16 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 
     if (command == "reset_scale_field") {
         resetScaleField();
-    } 
+    }
+    else if (command == "show_scale_field") {
+        int resolution = args.asInt(1);
+        double baseScale = args.asDouble(2);
+        meshName = args.asString(3);
+
+        selectMesh();
+
+        showScaleFieldColors(resolution, baseScale);
+    }
     else if (command == "generate") {
         int resolution = args.asInt(1);
         MString SE = args.asString(3);
@@ -91,6 +100,55 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     return MS::kSuccess;
 }
 
+void BoundingProxy::showScaleFieldColors(int res, double baseScale) {
+    if (!editedS) {
+        // Initialize S if haven't
+        S = vector<vector<vector<double>>>(res, vector<vector<double>>(res, vector<double>(res, baseScale)));
+    }
+
+    MPointArray vertices;
+    meshFn->getPoints(vertices, MSpace::kWorld);
+
+    MColorArray vertexColors;
+    MIntArray vertexIndices;
+
+    // Compute minS and maxS
+    double minS = DBL_MAX, maxS = DBL_MIN;
+    for (int x = 0; x < S.size(); x++) {
+        for (int y = 0; y < S[x].size(); y++) {
+            for (int z = 0; z < S[x][y].size(); z++) {
+                double sVal = S[x][y][z];
+                if (sVal < minS) minS = sVal;
+                if (sVal > maxS) maxS = sVal;
+            }
+        }
+    }
+
+    for (unsigned int i = 0; i < vertices.length(); i++) {
+        MPoint p = vertices[i];
+        // Convert p to voxel space
+        int vx = world2Voxel(p.x, meshFn->boundingBox().min().x, meshFn->boundingBox().max().x, (int)S.size());
+        int vy = world2Voxel(p.y, meshFn->boundingBox().min().y, meshFn->boundingBox().max().y, (int)S.size());
+        int vz = world2Voxel(p.z, meshFn->boundingBox().min().z, meshFn->boundingBox().max().z, (int)S.size());
+
+        double sVal = S[vx][vy][vz];
+        double normS;
+        if (fabs(maxS - minS) < 1e-8) {
+            normS = 0.5;
+        }
+        else {
+            normS = (sVal - minS) / (maxS - minS);
+        }
+
+        // Color mapping
+        MColor color((float) normS, (float) normS, (float) normS);
+        vertexColors.append(color);
+        vertexIndices.append((int)i);
+    }
+
+    meshFn->setVertexColors(vertexColors, vertexIndices);
+}
+
 void BoundingProxy::simplifyMesh(double maxError, MString method) {
     MyMesh mesh;
 
@@ -143,6 +201,12 @@ void BoundingProxy::simplifyMesh(double maxError, MString method) {
 
 // Convert Eigen V and F to Maya mesh
 void BoundingProxy::createMayaMesh(MString name) {
+    MSelectionList selList;
+    if (MGlobal::getSelectionListByName(name, selList) == MS::kSuccess && !selList.isEmpty()) {
+        MString deleteCmd = "delete " + name + ";";
+        MGlobal::executeCommand(deleteCmd);
+    }
+
     MPointArray mayaVertices;
     MIntArray mayaFaceCounts;
     MIntArray mayaFaceConnects;
@@ -617,6 +681,9 @@ double BoundingProxy::intersectTriangleX(MPoint v0, MPoint v1, MPoint v2, double
 }
 
 MStatus BoundingProxy::selectMesh() {
+    MGlobal::executeCommand("select -cl;");
+    MGlobal::executeCommand("select " + meshName + ";");
+
     MSelectionList selection;
     MStatus status = selection.add(meshName);
 

@@ -113,6 +113,7 @@ public:
     void cubeMarching();
     void createMayaMesh(MString name);
     void simplifyMesh(double maxError, MString method);
+    void showScaleFieldColors(int res, double baseScale);
 };
 
 #endif // BOUNDING_PROXY_H

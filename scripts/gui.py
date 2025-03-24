@@ -60,6 +60,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         morph_layout.addWidget(self.base_scale_spinbox)
 
         self.edit_scale_checkbox = QtWidgets.QCheckBox("Edit Scale Field")
+        self.edit_scale_checkbox.stateChanged.connect(self.edit_scale_field_changed)
         morph_layout.addWidget(self.edit_scale_checkbox)
 
         morph_layout.addWidget(QtWidgets.QLabel("Brush Size:"))
@@ -210,6 +211,17 @@ class GeneratePluginUI(QtWidgets.QWidget):
         maxError = self.max_err_spinbox.value()
         simplify = "cqem" if self.cqem_radio.isChecked() else "qem"
         cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}", "{seMode}", {baseScale}, "{self.selected_object}", {maxError}, "{simplify}")')
+
+    def edit_scale_field_changed(self, state):
+        if not self.check_selection():
+            return
+        resolution = int(self.resolution_dropdown.currentText())
+        baseScale = self.base_scale_spinbox.value()
+        if state > 0:
+            cmds.setAttr(self.selected_object + ".displayColors", 1)
+            cmds.evalDeferred(f'cmds.BoundingProxyCmd("show_scale_field", {resolution}, {baseScale}, "{self.selected_object}")')
+        else:
+            cmds.setAttr(self.selected_object + ".displayColors", 0)
 
 def show():
     global generate_plugin_ui

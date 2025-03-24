@@ -33,7 +33,7 @@ MStatus uninitializePlugin(MObject obj) {
     MStatus status;
     MFnPlugin plugin(obj);
 
-    status = plugin.deregisterCommand("generate");
+    status = plugin.deregisterCommand("BoundingProxyCmd");
     if (!status) {
         status.perror("deregisterCommand");
         return status;
