@@ -27,6 +27,8 @@
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 #include <OpenMesh/Tools/Decimater/DecimaterT.hh>
 #include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
+
+
 using namespace std;
 
 typedef OpenMesh::TriMesh_ArrayKernelT<>  MyMesh;
@@ -113,6 +115,15 @@ public:
     void cubeMarching();
     void createMayaMesh(MString name);
     void simplifyMesh(double maxError, MString method);
+
+
+    //GPU version
+    void voxelizationGPU(int res);
+    void pyramidGGPU();
+    void dilationGPU(MString SE, double baseScale);
+    void connectedContourGPU();
+    void erosionGPU();
+
 };
 
 #endif // BOUNDING_PROXY_H

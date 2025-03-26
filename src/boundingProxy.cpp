@@ -1,5 +1,5 @@
 #include "boundingProxy.h"
-
+#include <../KernelHelper.h>
 BoundingProxy::BoundingProxy() 
     : meshFn(nullptr), editedS(false), voxelCount(0)
 {};
@@ -57,6 +57,11 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         }
         else {
             // TODO: GPU
+            initializeCuda();
+            MGlobal::displayInfo("Using GPU implementation");
+
+            voxelizationGPU(resolution);
+            shutdownCuda();
         }
     }
     // For debug purpose only
@@ -682,4 +687,98 @@ void BoundingProxy::showVoxel(vector<vector<vector<bool>>> grid, MString name) {
             }
         }
     }
+}
+
+void BoundingProxy::voxelizationGPU(int res) {
+
+    
+
+    MPointArray vertices;
+    meshFn->getPoints(vertices, MSpace::kWorld);
+
+    MIntArray triangleCounts, triangleIndices;
+    meshFn->getTriangles(triangleCounts, triangleIndices);
+
+    MBoundingBox bbox = meshFn->boundingBox();
+    MPoint minPoint = bbox.min();
+    MPoint maxPoint = bbox.max();
+
+    double minX = minPoint.x, minY = minPoint.y, minZ = minPoint.z;
+    double maxX = maxPoint.x, maxY = maxPoint.y, maxZ = maxPoint.z;
+    deltaP = MPoint((maxX - minX) / res, (maxY - minY) / res, (maxZ - minZ) / res);
+
+    double scale = res * res * 5.0;
+    minX *= scale; minY *= scale; minZ *= scale;
+    maxX *= scale; maxY *= scale; maxZ *= scale;
+
+    float3_t dev_min((float)minX, (float)minY, (float)minZ);
+    float3_t dev_max((float)maxX, (float)maxY, (float)maxZ);
+    float3_t dev_delta((float)deltaP.x, (float)deltaP.y, (float)deltaP.z);
+
+    int numVertices = vertices.length();
+    vector<float3_t> h_vertices(numVertices);
+    for (int i = 0; i < numVertices; ++i) {
+        MPoint p = vertices[i] * scale;
+        h_vertices[i] = float3_t((float)p.x, (float)p.y, (float)p.z);
+    }
+
+    int numTriangles = triangleIndices.length() / 3;
+    vector<int> h_indices(triangleIndices.length());
+    for (int i = 0; i < triangleIndices.length(); ++i) {
+        h_indices[i] = triangleIndices[i];
+    }
+
+    bool* d_grid = nullptr;
+    float3_t* d_vertices = nullptr;
+    int* d_indices = nullptr;
+    size_t gridSize = res * res * res * sizeof(bool);
+    size_t verticesSize = numVertices * sizeof(float3_t);
+    size_t indicesSize = triangleIndices.length() * sizeof(int);
+
+
+    if (!allocateCudaMemory((void**)&d_grid, gridSize)) {
+        MGlobal::displayError("Failed to allocate device memory for voxel grid");
+        return;
+    }
+    if (!allocateCudaMemory((void**)&d_vertices, verticesSize)) {
+        MGlobal::displayError("Failed to allocate device memory for vertices");
+        return;
+    }
+    if (!allocateCudaMemory((void**)&d_indices, indicesSize)) {
+        MGlobal::displayError("Failed to allocate device memory for triangle indices");
+        return;
+    }
+
+    if (!copyToDevice(d_vertices, h_vertices.data(), verticesSize)) {
+        MGlobal::displayError("Failed to copy vertices to device");
+        return;
+    }
+    if (!copyToDevice(d_indices, h_indices.data(), indicesSize)) {
+        MGlobal::displayError("Failed to copy triangle indices to device");
+        return;
+    }
+
+    //initial device grid memory
+    cudaError_t initErr = cudaMemset(d_grid, 0, gridSize);
+   
+    //lauch CUDA kernel
+    launchVoxelizationKernel(d_grid, d_vertices, d_indices,
+        numTriangles, dev_min, dev_max, dev_delta, res);
+
+    vector<vector<vector<bool>>> h_grid;
+
+    h_grid.resize(res, vector<vector<bool>>(res, vector<bool>(res, false)));
+    if (!copy3DArrayFromDevice<bool>(h_grid, d_grid, res)) {
+        MGlobal::displayError("Failed to copy voxel grid from device");
+        return;
+    }
+    // Store the resulting voxel grid in the class member G
+    G = h_grid;
+
+    // --- Free device memory ---
+    freeCudaMemory(d_grid);
+    freeCudaMemory(d_vertices);
+    freeCudaMemory(d_indices);
+
+
 }
