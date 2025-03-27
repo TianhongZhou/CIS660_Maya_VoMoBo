@@ -27,6 +27,8 @@
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 #include <OpenMesh/Tools/Decimater/DecimaterT.hh>
 #include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
+#include <OpenMesh/Tools/Smoother/JacobiLaplaceSmootherT.hh>
+#include <OpenMesh/Core/Utils/PropertyManager.hh>
 using namespace std;
 
 typedef OpenMesh::TriMesh_ArrayKernelT<>  MyMesh;
@@ -95,7 +97,7 @@ public:
     MStatus doIt(const MArgList&) override;
     MStatus selectMesh();
     void voxelizationCPU(int res);
-    int world2Voxel(double w, double min, double max, int res);
+    double world2Voxel(double w, double min, double max, int res);
     double voxel2World(int v, double min, double max, int res);
     MVector crossProduct(MVector a, MVector b);
     void showVoxel(vector<vector<vector<bool>>> grid, MString name);

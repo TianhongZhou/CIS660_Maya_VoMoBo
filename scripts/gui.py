@@ -107,11 +107,11 @@ class GeneratePluginUI(QtWidgets.QWidget):
         mesh_block_layout.addWidget(self.cube_radio)
 
         self.max_err_spinbox = QtWidgets.QDoubleSpinBox()
-        self.max_err_spinbox.setRange(0.001, 99.999)
+        self.max_err_spinbox.setRange(0.001, 9999.999)
         self.max_err_spinbox.setDecimals(3)
         self.max_err_spinbox.setSingleStep(0.001)
-        self.max_err_spinbox.setValue(5.000)
-        mesh_block_layout.addWidget(QtWidgets.QLabel("Max Error (x0.01):"))
+        self.max_err_spinbox.setValue(1.000)
+        mesh_block_layout.addWidget(QtWidgets.QLabel("Max Error (x1e-5):"))
         mesh_block_layout.addWidget(self.max_err_spinbox)
 
         mesh_block_layout.addWidget(QtWidgets.QLabel("Simplify Method:"))

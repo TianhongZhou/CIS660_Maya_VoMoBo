@@ -203,23 +203,23 @@ size_t DecimaterT<Mesh>::decimate(double minX, double maxX, double minY, double 
     CollapseInfo ci(mesh_, v0v1);
 
     if (method == "cqem") {
-        auto world2Voxel = [](double w, double min, double max, int res) -> int {
-            int result = static_cast<int>((w - min) / (max - min) * (res - 1));
-            if (result < 0) result = 0;
-            if (result > res - 1) result = res - 1;
+        auto world2Voxel = [](double w, double min, double max, int res) -> double {
+            double result = (w - min) / (max - min) * (res - 1);
+            if (result < 0) result = 0.0;
+            if (result > res - 1) result = res - 1.0;
             return result;
             };
 
         int res = (int)S.size();
-        int v0x = world2Voxel(mesh_.point(ci.v0)[0], minX, maxX, res);
-        int v0y = world2Voxel(mesh_.point(ci.v0)[1], minY, maxY, res);
-        int v0z = world2Voxel(mesh_.point(ci.v0)[2], minZ, maxZ, res);
-        int v1x = world2Voxel(mesh_.point(ci.v1)[0], minX, maxX, res);
-        int v1y = world2Voxel(mesh_.point(ci.v1)[1], minY, maxY, res);
-        int v1z = world2Voxel(mesh_.point(ci.v1)[2], minZ, maxZ, res);
+        double v0x = world2Voxel(mesh_.point(ci.v0)[0], minX, maxX, res);
+        double v0y = world2Voxel(mesh_.point(ci.v0)[1], minY, maxY, res);
+        double v0z = world2Voxel(mesh_.point(ci.v0)[2], minZ, maxZ, res);
+        double v1x = world2Voxel(mesh_.point(ci.v1)[0], minX, maxX, res);
+        double v1y = world2Voxel(mesh_.point(ci.v1)[1], minY, maxY, res);
+        double v1z = world2Voxel(mesh_.point(ci.v1)[2], minZ, maxZ, res);
 
-        double scale_v0 = S[v0x][v0y][v0z];
-        double scale_v1 = S[v1x][v1y][v1z];
+        double scale_v0 = S[(int)v0x][(int)v0y][(int)v0z];
+        double scale_v1 = S[(int)v1x][(int)v1y][(int)v1z];
 
         double edge_length = sqrt(pow(v0x - v1x, 2) + pow(v0y - v1y, 2) + pow(v0z - v1z, 2));
 

@@ -127,9 +127,9 @@ void BoundingProxy::showScaleFieldColors(int res, double baseScale) {
     for (unsigned int i = 0; i < vertices.length(); i++) {
         MPoint p = vertices[i];
         // Convert p to voxel space
-        int vx = world2Voxel(p.x, meshFn->boundingBox().min().x, meshFn->boundingBox().max().x, (int)S.size());
-        int vy = world2Voxel(p.y, meshFn->boundingBox().min().y, meshFn->boundingBox().max().y, (int)S.size());
-        int vz = world2Voxel(p.z, meshFn->boundingBox().min().z, meshFn->boundingBox().max().z, (int)S.size());
+        int vx = (int)world2Voxel(p.x, meshFn->boundingBox().min().x, meshFn->boundingBox().max().x, (int)S.size());
+        int vy = (int)world2Voxel(p.y, meshFn->boundingBox().min().y, meshFn->boundingBox().max().y, (int)S.size());
+        int vz = (int)world2Voxel(p.z, meshFn->boundingBox().min().z, meshFn->boundingBox().max().z, (int)S.size());
 
         double sVal = S[vx][vy][vz];
         double normS;
@@ -150,6 +150,15 @@ void BoundingProxy::showScaleFieldColors(int res, double baseScale) {
 }
 
 void BoundingProxy::simplifyMesh(double maxError, MString method) {
+    Eigen::MatrixXd V_backup = V;
+    Eigen::Vector3d minBound, maxBound;
+    minBound << V.col(0).minCoeff(), V.col(1).minCoeff(), V.col(2).minCoeff();
+    maxBound << V.col(0).maxCoeff(), V.col(1).maxCoeff(), V.col(2).maxCoeff();
+
+    V.col(0) = (V.col(0).array() - minBound[0]) / (maxBound[0] - minBound[0]);
+    V.col(1) = (V.col(1).array() - minBound[1]) / (maxBound[1] - minBound[1]);
+    V.col(2) = (V.col(2).array() - minBound[2]) / (maxBound[2] - minBound[2]);
+
     MyMesh mesh;
 
     vector<MyMesh::VertexHandle> vHandles;
@@ -166,7 +175,7 @@ void BoundingProxy::simplifyMesh(double maxError, MString method) {
     HModQuadric modQuadric;
     decimater.add(modQuadric);
 
-    decimater.module(modQuadric).set_max_err(maxError * 1e-2);
+    decimater.module(modQuadric).set_max_err(maxError * 1e-5);
 
     decimater.initialize();
     double minX = V.col(0).minCoeff();
@@ -197,6 +206,10 @@ void BoundingProxy::simplifyMesh(double maxError, MString method) {
         MyMesh::FaceVertexIter fv_it = mesh.fv_iter(*f_it);
         F.row(index++) << vIndexMap[*fv_it], vIndexMap[*(++fv_it)], vIndexMap[*(++fv_it)];
     }
+
+    V.col(0) = V.col(0).array() * (maxBound[0] - minBound[0]) + minBound[0];
+    V.col(1) = V.col(1).array() * (maxBound[1] - minBound[1]) + minBound[1];
+    V.col(2) = V.col(2).array() * (maxBound[2] - minBound[2]) + minBound[2];
 }
 
 // Convert Eigen V and F to Maya mesh
@@ -239,12 +252,18 @@ void BoundingProxy::createMayaMesh(MString name) {
     MFnDagNode dagNode(newMesh);
     dagNode.setName(name);
 
-    MString reverseNormalCommand = "polyNormal -normalMode 0 -userNormalMode 0 -ch 1 " + name + ";";
-    MGlobal::executeCommand(reverseNormalCommand);
-
     MString assignMaterialCmd = "sets -e -forceElement initialShadingGroup " + name + ";";
     MGlobal::executeCommand(assignMaterialCmd);
 
+    MBoundingBox bbox = meshFn.boundingBox();
+    double maxDim = std::max({ bbox.width(), bbox.height(), bbox.depth() });
+    double edgeLen = maxDim * 0.085;
+    MString remeshCmd = "polyRemesh ";
+    remeshCmd += "-maxEdgeLength ";
+    remeshCmd += edgeLen;
+    remeshCmd += "-collapseThreshold 1.0 ";
+    remeshCmd += name + ";";
+    MGlobal::executeCommand(remeshCmd);
 }
 
 // Convert outputG to mesh using cube marchings from igl adn eigen
@@ -267,13 +286,27 @@ void BoundingProxy::cubeMarching() {
                     Sm(index, 0) = 0.0;
                 }
                 else {
-                    Sm(index, 0) = outputG[x - 1][y - 1][z - 1] ? 1.0 : 0.0;
+                    // Average Neighborhood
+                    double sum = 0.0;
+                    int count = 0;
+                    for (int dx = -1; dx <= 1; dx++) {
+                        for (int dy = -1; dy <= 1; dy++) {
+                            for (int dz = -1; dz <= 1; dz++) {
+                                int nx = x - 1 + dx, ny = y - 1 + dy, nz = z - 1 + dz;
+                                if (nx >= 0 && ny >= 0 && nz >= 0 && nx < N && ny < N && nz < N) {
+                                    sum += outputG[nx][ny][nz] ? 1.0 : 0.0;
+                                    count++;
+                                }
+                            }
+                        }
+                    }
+                    Sm(index, 0) = sum / count;
                 }
 
                 GV(index, 0) = (x - 1) * newDeltaX;
                 GV(index, 1) = (y - 1) * newDeltaY;
                 GV(index, 2) = (z - 1) * newDeltaZ;
-
+                 
                 index++;
             }
         }
@@ -571,10 +604,10 @@ void BoundingProxy::pyramidGCPU() {
     }
 }
 
-int BoundingProxy::world2Voxel(double w, double min, double max, int res) {
-    int result = (int) ((w - min) / (max - min) * (res - 1));
-    result = std::max(result, 0);
-    result = std::min(result, res - 1);
+double BoundingProxy::world2Voxel(double w, double min, double max, int res) {
+    double result = (w - min) / (max - min) * (res - 1);
+    result = std::max(result, 0.0);
+    result = std::min(result, res - 1.0);
     return result;
 }
 
@@ -624,12 +657,12 @@ void BoundingProxy::voxelizationCPU(int res) {
         MPoint v1 = vertices[triangleIndices[i + 1]];
         MPoint v2 = vertices[triangleIndices[i + 2]];
 
-        int y0 = world2Voxel(v0.y, minY, maxY, res);
-        int z0 = world2Voxel(v0.z, minZ, maxZ, res);
-        int y1 = world2Voxel(v1.y, minY, maxY, res);
-        int z1 = world2Voxel(v1.z, minZ, maxZ, res);
-        int y2 = world2Voxel(v2.y, minY, maxY, res);
-        int z2 = world2Voxel(v2.z, minZ, maxZ, res);
+        int y0 = (int)world2Voxel(v0.y, minY, maxY, res);
+        int z0 = (int)world2Voxel(v0.z, minZ, maxZ, res);
+        int y1 = (int)world2Voxel(v1.y, minY, maxY, res);
+        int z1 = (int)world2Voxel(v1.z, minZ, maxZ, res);
+        int y2 = (int)world2Voxel(v2.y, minY, maxY, res);
+        int z2 = (int)world2Voxel(v2.z, minZ, maxZ, res);
 
         int minY_vox = std::min({ y0, y1, y2 });
         int maxY_vox = std::max({ y0, y1, y2 });
@@ -644,7 +677,7 @@ void BoundingProxy::voxelizationCPU(int res) {
 
                 double xIntersect = intersectTriangleX(v0, v1, v2, vy, vz);
                 if (xIntersect == numeric_limits<double>::max()) continue;
-                int xIntersectVox = world2Voxel(xIntersect, minX, maxX, res);
+                int xIntersectVox = (int)world2Voxel(xIntersect, minX, maxX, res);
 
                 for (int x = xIntersectVox; x < res; x++) {
                     G[x][y][z] = !G[x][y][z];
