@@ -79,9 +79,9 @@ public:
     unordered_map<int, vector<vector<vector<bool>>>> GHat;
     vector<vector<vector<bool>>> D;
     vector<vector<vector<bool>>> Dc;
-    vector<vector<vector<double>>> S;
+    static vector<vector<vector<double>>> S;
     unordered_map<int, pair<vector<vector<vector<bool>>>, vector<vector<vector<double>>>>> DcHat;
-    bool editedS;
+    static bool editedS;
     vector<vector<vector<bool>>> E;
     vector<vector<vector<bool>>> outputG;
     int voxelCount;
@@ -116,6 +116,8 @@ public:
     void createMayaMesh(MString name);
     void simplifyMesh(double maxError, MString method);
     void showScaleFieldColors(int res, double baseScale);
+    bool raycastToMesh(MPoint origin, MVector dir, MPoint& outHitPoint);
+    void editScaleField(double wx, double wy, double wz);
 };
 
 #endif // BOUNDING_PROXY_H

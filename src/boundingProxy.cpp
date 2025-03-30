@@ -1,7 +1,10 @@
 #include "boundingProxy.h"
 
+std::vector<std::vector<std::vector<double>>> BoundingProxy::S;
+bool BoundingProxy::editedS = false;
+
 BoundingProxy::BoundingProxy() 
-    : meshFn(nullptr), editedS(false), voxelCount(0)
+    : meshFn(nullptr), voxelCount(0)
 {};
 
 BoundingProxy::~BoundingProxy() { 
@@ -22,6 +25,18 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 
     if (command == "reset_scale_field") {
         resetScaleField();
+    } 
+    else if (command == "edit_scale_field") {
+        MPoint rayOrigin(args.asDouble(1), args.asDouble(2), args.asDouble(3));
+        MVector rayDir(args.asDouble(4), args.asDouble(5), args.asDouble(6));
+        meshName = args.asString(7);
+
+        selectMesh();
+
+        MPoint intersectionPoint;
+        if (raycastToMesh(rayOrigin, rayDir, intersectionPoint)) {
+            editScaleField(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
+        }
     }
     else if (command == "show_scale_field") {
         int resolution = args.asInt(1);
@@ -98,6 +113,50 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     }
 
     return MS::kSuccess;
+}
+
+void BoundingProxy::editScaleField(double wx, double wy, double wz) {
+    editedS = true;
+
+    int vx = (int)world2Voxel(wx, meshFn->boundingBox().min().x, meshFn->boundingBox().max().x, (int)S.size());
+    int vy = (int)world2Voxel(wy, meshFn->boundingBox().min().y, meshFn->boundingBox().max().y, (int)S.size());
+    int vz = (int)world2Voxel(wz, meshFn->boundingBox().min().z, meshFn->boundingBox().max().z, (int)S.size());
+
+    // TODO
+}
+
+bool BoundingProxy::raycastToMesh(MPoint origin, MVector dir, MPoint& outHitPoint) {
+    MFloatPoint floatHit;
+    float rayParam, bary1, bary2;
+    int faceIdx, triIdx;
+
+    MStatus stat;
+
+    bool hit = meshFn->closestIntersection(
+        MFloatPoint(origin),
+        MFloatVector(dir),
+        nullptr,            // all faces
+        nullptr,            // all triangles
+        false,              // idsSorted
+        MSpace::kWorld,
+        1e10f,              // max ray distance
+        false,              // test both directions
+        nullptr,            // no accel struct
+        floatHit,           // output: intersection point
+        &rayParam,          // output: ray t
+        &faceIdx,           // output: face idx
+        &triIdx,            // output: triangle idx
+        &bary1,             // output: bary coord 1
+        &bary2,             // output: bary coord 2
+        1e-6f,              // tolerance
+        &stat               // output: status
+    );
+
+    if (hit) {
+        outHitPoint = MPoint(floatHit);
+    }
+
+    return hit;
 }
 
 void BoundingProxy::showScaleFieldColors(int res, double baseScale) {

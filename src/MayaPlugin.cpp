@@ -3,12 +3,14 @@
 #include <maya/MGlobal.h>
 #include <iostream>
 #include "boundingProxy.h"
+#include "brushContext.h"
 
 MStatus initializePlugin(MObject obj) {
     MStatus status;
     MFnPlugin plugin(obj, "MyPlugin", "1.0", "Any");
 
     status = plugin.registerCommand("BoundingProxyCmd", BoundingProxy::creator);
+    status = plugin.registerContextCommand("ScaleBrushContextCmd", BrushContextCmd::creator);
     if (!status) {
         status.perror("registerCommand");
         return status;
@@ -34,6 +36,7 @@ MStatus uninitializePlugin(MObject obj) {
     MFnPlugin plugin(obj);
 
     status = plugin.deregisterCommand("BoundingProxyCmd");
+    status = plugin.deregisterContextCommand("ScaleBrushContextCmd");
     if (!status) {
         status.perror("deregisterCommand");
         return status;

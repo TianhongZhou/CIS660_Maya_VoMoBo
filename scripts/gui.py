@@ -220,8 +220,21 @@ class GeneratePluginUI(QtWidgets.QWidget):
         if state > 0:
             cmds.setAttr(self.selected_object + ".displayColors", 1)
             cmds.evalDeferred(f'cmds.BoundingProxyCmd("show_scale_field", {resolution}, {baseScale}, "{self.selected_object}")')
+
+            if not cmds.contextInfo("ScaleBrushContextCmd", exists=True):
+                self.scale_context = cmds.ScaleBrushContextCmd()
+            cmds.ScaleBrushContextCmd(self.scale_context, edit=True, mesh=self.selected_object)
+            cmds.setToolTo(self.scale_context)
         else:
             cmds.setAttr(self.selected_object + ".displayColors", 0)
+            cmds.setToolTo("selectSuperContext")
+
+    def closeEvent(self, event):
+        print("Plugin UI Closed")
+        if self.edit_scale_checkbox.isChecked():
+            cmds.setAttr(self.selected_object + ".displayColors", 0)
+            cmds.setToolTo("selectSuperContext")
+        event.accept()
 
 def show():
     global generate_plugin_ui
