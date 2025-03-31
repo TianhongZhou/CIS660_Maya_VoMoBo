@@ -65,8 +65,9 @@ class GeneratePluginUI(QtWidgets.QWidget):
 
         morph_layout.addWidget(QtWidgets.QLabel("Brush Size:"))
         self.brush_size_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.brush_size_slider.setRange(1, 3000)
+        self.brush_size_slider.setRange(1, 300)
         self.brush_size_slider.setValue(10)
+        self.brush_size_slider.valueChanged.connect(self.refresh_scale_field)
         morph_layout.addWidget(self.brush_size_slider)
 
         morph_layout.addWidget(QtWidgets.QLabel("Target Scale:"))
@@ -75,6 +76,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.target_scale_spinbox.setValue(2.0)
         self.target_scale_spinbox.setDecimals(2)
         self.target_scale_spinbox.setSingleStep(0.1)
+        self.target_scale_spinbox.valueChanged.connect(self.refresh_scale_field)
         morph_layout.addWidget(self.target_scale_spinbox)
 
         morph_layout.addWidget(QtWidgets.QLabel("Brush Mode:"))
@@ -82,9 +84,11 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.increase_radio = QtWidgets.QRadioButton("Increase")
         self.decrease_radio = QtWidgets.QRadioButton("Decrease")
         self.erase_radio = QtWidgets.QRadioButton("Erase")
+        self.increase_radio.setChecked(True)
         self.brush_mode_group.addButton(self.increase_radio)
         self.brush_mode_group.addButton(self.decrease_radio)
         self.brush_mode_group.addButton(self.erase_radio)
+        self.brush_mode_group.buttonClicked.connect(self.refresh_scale_field)
         morph_layout.addWidget(self.increase_radio)
         morph_layout.addWidget(self.decrease_radio)
         morph_layout.addWidget(self.erase_radio)
@@ -188,7 +192,9 @@ class GeneratePluginUI(QtWidgets.QWidget):
     def reset_scale_field_action(self):
         if not self.check_selection():
             return
-        cmds.evalDeferred('cmds.BoundingProxyCmd("reset_scale_field")')
+        resolution = int(self.resolution_dropdown.currentText())
+        baseScale = self.base_scale_spinbox.value()
+        cmds.evalDeferred(f'cmds.BoundingProxyCmd("reset_scale_field", {resolution}, {baseScale}, "{self.selected_object}")')
 
     def voxel_action(self):
         if not self.check_selection():
@@ -212,27 +218,60 @@ class GeneratePluginUI(QtWidgets.QWidget):
         simplify = "cqem" if self.cqem_radio.isChecked() else "qem"
         cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}", "{seMode}", {baseScale}, "{self.selected_object}", {maxError}, "{simplify}")')
 
+    def refresh_scale_field(self):
+        resolution = int(self.resolution_dropdown.currentText())
+        baseScale = self.base_scale_spinbox.value()
+        radius = self.brush_size_slider.value()
+        targetScale = self.target_scale_spinbox.value()
+        if self.increase_radio.isChecked():
+            mode = "increase"
+        elif self.decrease_radio.isChecked():
+            mode = "decrease"
+        else:
+            mode = "erase"
+        cmds.setAttr(self.selected_object + ".displayColors", 1)
+        cmds.displayPref(wsa="none")
+        cmds.evalDeferred(f'cmds.BoundingProxyCmd("show_scale_field", {resolution}, {baseScale}, "{self.selected_object}")')
+
+        if not cmds.contextInfo("ScaleBrushContextCmd", exists=True):
+            self.scale_context = cmds.ScaleBrushContextCmd()
+        cmds.ScaleBrushContextCmd(self.scale_context, edit=True, mesh=self.selected_object, 
+                                        radius=radius, targetScale=targetScale, mode=mode, baseScale=baseScale)
+        cmds.setToolTo(self.scale_context)
+
     def edit_scale_field_changed(self, state):
         if not self.check_selection():
             return
-        resolution = int(self.resolution_dropdown.currentText())
-        baseScale = self.base_scale_spinbox.value()
         if state > 0:
+            resolution = int(self.resolution_dropdown.currentText())
+            baseScale = self.base_scale_spinbox.value()
+            radius = self.brush_size_slider.value()
+            targetScale = self.target_scale_spinbox.value()
+            if self.increase_radio.isChecked():
+                mode = "increase"
+            elif self.decrease_radio.isChecked():
+                mode = "decrease"
+            else:
+                mode = "erase"
             cmds.setAttr(self.selected_object + ".displayColors", 1)
+            cmds.displayPref(wsa="none")
             cmds.evalDeferred(f'cmds.BoundingProxyCmd("show_scale_field", {resolution}, {baseScale}, "{self.selected_object}")')
 
             if not cmds.contextInfo("ScaleBrushContextCmd", exists=True):
                 self.scale_context = cmds.ScaleBrushContextCmd()
-            cmds.ScaleBrushContextCmd(self.scale_context, edit=True, mesh=self.selected_object)
+            cmds.ScaleBrushContextCmd(self.scale_context, edit=True, mesh=self.selected_object, 
+                                            radius=radius, targetScale=targetScale, mode=mode, baseScale=baseScale)
             cmds.setToolTo(self.scale_context)
         else:
             cmds.setAttr(self.selected_object + ".displayColors", 0)
+            cmds.displayPref(wsa="full")
             cmds.setToolTo("selectSuperContext")
 
     def closeEvent(self, event):
         print("Plugin UI Closed")
         if self.edit_scale_checkbox.isChecked():
             cmds.setAttr(self.selected_object + ".displayColors", 0)
+            cmds.displayPref(wsa="full")
             cmds.setToolTo("selectSuperContext")
         event.accept()
 

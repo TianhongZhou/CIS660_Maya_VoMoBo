@@ -25,17 +25,29 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 
     if (command == "reset_scale_field") {
         resetScaleField();
+
+        int resolution = args.asInt(1);
+        double baseScale = args.asDouble(2);
+        meshName = args.asString(3);
+
+        selectMesh();
+
+        showScaleFieldColors(resolution, baseScale);
     } 
     else if (command == "edit_scale_field") {
         MPoint rayOrigin(args.asDouble(1), args.asDouble(2), args.asDouble(3));
         MVector rayDir(args.asDouble(4), args.asDouble(5), args.asDouble(6));
         meshName = args.asString(7);
+        double radius = args.asDouble(8);
+        double targetScale = args.asDouble(9);
+        MString mode = args.asString(10);
+        double baseScale = args.asDouble(11);
 
         selectMesh();
 
         MPoint intersectionPoint;
         if (raycastToMesh(rayOrigin, rayDir, intersectionPoint)) {
-            editScaleField(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
+            editScaleField(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z, radius, targetScale, mode, baseScale);
         }
     }
     else if (command == "show_scale_field") {
@@ -115,14 +127,51 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
     return MS::kSuccess;
 }
 
-void BoundingProxy::editScaleField(double wx, double wy, double wz) {
+double BoundingProxy::gamma(double t, double s, double sigma) {
+    if (t >= 0.0 && t < s) {
+        return 1.0;
+    }
+    else if (t >= s && t < s + sigma) {
+        return pow(1.0 - pow(t / sigma, 2.0), 2.0);
+    }
+    else {
+        return 0.0;
+    }
+}
+
+double BoundingProxy::phi(MPoint x, double sprev, double s, double sigma, MPoint p) {
+    double norm = x.distanceTo(p);
+    double g = gamma(norm, s, sigma);
+    return (1.0 - g) * sprev + g * s;
+}
+
+void BoundingProxy::editScaleField(double wx, double wy, double wz, double sigma, double s, MString mode, double bs) {
     editedS = true;
 
     int vx = (int)world2Voxel(wx, meshFn->boundingBox().min().x, meshFn->boundingBox().max().x, (int)S.size());
     int vy = (int)world2Voxel(wy, meshFn->boundingBox().min().y, meshFn->boundingBox().max().y, (int)S.size());
     int vz = (int)world2Voxel(wz, meshFn->boundingBox().min().z, meshFn->boundingBox().max().z, (int)S.size());
 
-    // TODO
+    for (int x = max(0, vx - (int)sigma); x < min((int)S.size(), vx + (int)sigma); x++) {
+        for (int y = max(0, vy - (int)sigma); y < min((int)S.size(), vy + (int)sigma); y++) {
+            for (int z = max(0, vz - (int)sigma); z < min((int)S.size(), vz + (int)sigma); z++) {
+                MPoint X(x, y, z);
+                MPoint P(vx, vy, vz);
+                double Sx = S[x][y][z];
+                if (mode == "increase") {
+                    S[x][y][z] = max(phi(X, Sx, s, sigma, P), Sx);
+                }
+                else if (mode == "decrease") {
+                    S[x][y][z] = min(phi(X, Sx, s, sigma, P), Sx);
+                }
+                else {
+                    S[x][y][z] = phi(X, Sx, bs, sigma, P);
+                }
+            }
+        }
+    }
+
+    showScaleFieldColors((int)S.size(), bs);
 }
 
 bool BoundingProxy::raycastToMesh(MPoint origin, MVector dir, MPoint& outHitPoint) {

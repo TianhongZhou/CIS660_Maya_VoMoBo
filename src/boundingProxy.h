@@ -117,7 +117,9 @@ public:
     void simplifyMesh(double maxError, MString method);
     void showScaleFieldColors(int res, double baseScale);
     bool raycastToMesh(MPoint origin, MVector dir, MPoint& outHitPoint);
-    void editScaleField(double wx, double wy, double wz);
+    void editScaleField(double wx, double wy, double wz, double sigma, double s, MString mode, double bs);
+    double phi(MPoint x, double sprev, double s, double sigma, MPoint p);
+    double gamma(double t, double s, double sigma);
 };
 
 #endif // BOUNDING_PROXY_H

@@ -15,11 +15,20 @@
 class BrushContext : public MPxContext {
 public:
     MString mesh;
+    double radius;
+    double targetScale;
+    MString mode;
+    double baseScale;
 
     BrushContext();
     void toolOnSetup(MEvent& event) override;
     MStatus doPress(MEvent& event, MHWRender::MUIDrawManager& drawMgr, const MHWRender::MFrameContext& context) override;
+    MStatus doDrag(MEvent& event, MHWRender::MUIDrawManager& drawMgr, const MHWRender::MFrameContext& context) override;
     void setTargetMesh(MString name);
+    void setBrushRadius(double r);
+    void setTargetScale(double ts);
+    void setMode(MString m);
+    void setBaseScale(double bs);
 };
 
 class BrushContextCmd : public MPxContextCommand {
