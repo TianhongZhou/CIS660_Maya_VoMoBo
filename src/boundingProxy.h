@@ -90,6 +90,8 @@ public:
     Eigen::MatrixXi F;
     vector<Quadric> quadrics;
     priority_queue<EdgeCollapse> collapseQueue;
+    static MPoint lastEditP;
+    static vector<vector<vector<double>>> prevS;
 
     BoundingProxy();
     ~BoundingProxy();
@@ -118,7 +120,7 @@ public:
     void simplifyMesh(double maxError, MString method);
     void showScaleFieldColors(int res, double baseScale);
     bool raycastToMesh(MPoint origin, MVector dir, MPoint& outHitPoint);
-    void editScaleField(double wx, double wy, double wz, double sigma, double s, MString mode, double bs);
+    void editScaleField(double wx, double wy, double wz, double sigma, double s, MString mode, double bs, bool show);
     double phi(MPoint x, double sprev, double s, double sigma, MPoint p);
     double gamma(double t, double s, double sigma);
 };

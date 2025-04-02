@@ -72,13 +72,13 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.brush_size_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.brush_size_slider.setRange(1, 300)
         self.brush_size_slider.setValue(20)
-        self.brush_size_slider.valueChanged.connect(self.refresh_scale_field)
+        self.brush_size_slider.valueChanged.connect(self.brush_size_changed)
         morph_layout.addWidget(self.brush_size_slider)
 
         morph_layout.addWidget(QtWidgets.QLabel("Target Scale:"))
         self.target_scale_spinbox = QtWidgets.QDoubleSpinBox()
         self.target_scale_spinbox.setRange(0.1, 99.9)
-        self.target_scale_spinbox.setValue(2.0)
+        self.target_scale_spinbox.setValue(10.0)
         self.target_scale_spinbox.setDecimals(2)
         self.target_scale_spinbox.setSingleStep(0.1)
         self.target_scale_spinbox.valueChanged.connect(self.refresh_scale_field)
@@ -231,7 +231,24 @@ class GeneratePluginUI(QtWidgets.QWidget):
         simplify = "cqem" if self.cqem_radio.isChecked() else "qem"
         cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}", "{seMode}", {baseScale}, "{self.selected_object}", {maxError}, "{simplify}")')
 
+    def brush_size_changed(self):
+        if not self.check_selection():
+            return
+        baseScale = self.base_scale_spinbox.value()
+        radius = self.brush_size_slider.value()
+        targetScale = self.target_scale_spinbox.value()
+        if self.increase_radio.isChecked():
+            mode = "increase"
+        elif self.decrease_radio.isChecked():
+            mode = "decrease"
+        else:
+            mode = "erase"
+        cmds.evalDeferred(f'cmds.BoundingProxyCmd("brush_size", "{mode}", {baseScale}, "{self.selected_object}", {radius}, {targetScale})')
+        self.refresh_scale_field()
+
     def refresh_scale_field(self):
+        if not self.check_selection():
+            return
         self.edit_scale_checkbox.setChecked(True)
 
         resolution = int(self.resolution_dropdown.currentText())
@@ -258,25 +275,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         if not self.check_selection():
             return
         if state > 0:
-            resolution = int(self.resolution_dropdown.currentText())
-            baseScale = self.base_scale_spinbox.value()
-            radius = self.brush_size_slider.value()
-            targetScale = self.target_scale_spinbox.value()
-            if self.increase_radio.isChecked():
-                mode = "increase"
-            elif self.decrease_radio.isChecked():
-                mode = "decrease"
-            else:
-                mode = "erase"
-            cmds.setAttr(self.selected_object + ".displayColors", 1)
-            cmds.displayPref(wsa="none")
-            cmds.evalDeferred(f'cmds.BoundingProxyCmd("show_scale_field", {resolution}, {baseScale}, "{self.selected_object}")')
-
-            if not cmds.contextInfo("ScaleBrushContextCmd", exists=True):
-                self.scale_context = cmds.ScaleBrushContextCmd()
-            cmds.ScaleBrushContextCmd(self.scale_context, edit=True, mesh=self.selected_object, 
-                                            radius=radius, targetScale=targetScale, mode=mode, baseScale=baseScale)
-            cmds.setToolTo(self.scale_context)
+            self.refresh_scale_field()
         else:
             cmds.setAttr(self.selected_object + ".displayColors", 0)
             cmds.displayPref(wsa="full")

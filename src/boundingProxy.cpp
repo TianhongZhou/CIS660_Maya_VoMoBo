@@ -1,7 +1,9 @@
 #include "boundingProxy.h"
 
 std::vector<std::vector<std::vector<double>>> BoundingProxy::S;
+std::vector<std::vector<std::vector<double>>> BoundingProxy::prevS;
 bool BoundingProxy::editedS = false;
+MPoint BoundingProxy::lastEditP = MPoint(DBL_MAX, DBL_MAX, DBL_MAX);
 
 BoundingProxy::BoundingProxy() 
     : meshFn(nullptr), voxelCount(0)
@@ -34,6 +36,20 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 
         showScaleFieldColors(resolution, baseScale);
     } 
+    else if (command == "brush_size") {
+        MString mode = args.asString(1);
+        double baseScale = args.asDouble(2);
+        meshName = args.asString(3);
+        double radius = args.asDouble(4);
+        double targetScale = args.asDouble(5);
+
+        selectMesh();
+
+        if (lastEditP.x != DBL_MAX) {
+            S = prevS;
+            editScaleField(lastEditP.x, lastEditP.y, lastEditP.z, radius, targetScale, mode, baseScale, true);
+        }
+    }
     else if (command == "edit_scale_field") {
         MPoint rayOrigin(args.asDouble(1), args.asDouble(2), args.asDouble(3));
         MVector rayDir(args.asDouble(4), args.asDouble(5), args.asDouble(6));
@@ -47,7 +63,10 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 
         MPoint intersectionPoint;
         if (raycastToMesh(rayOrigin, rayDir, intersectionPoint)) {
-            editScaleField(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z, radius, targetScale, mode, baseScale);
+            editScaleField(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z, 0.0, targetScale, mode, baseScale, false);
+            prevS = S;
+            editScaleField(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z, radius, targetScale, mode, baseScale, true);
+            lastEditP = intersectionPoint;
         }
     }
     else if (command == "show_scale_field") {
@@ -140,7 +159,7 @@ double BoundingProxy::phi(MPoint x, double sprev, double s, double sigma, MPoint
     return (1.0 - g) * sprev + g * s;
 }
 
-void BoundingProxy::editScaleField(double wx, double wy, double wz, double sigma, double s, MString mode, double bs) {
+void BoundingProxy::editScaleField(double wx, double wy, double wz, double sigma, double s, MString mode, double bs, bool show) {
     editedS = true;
 
     int vx = (int)world2Voxel(wx, meshFn->boundingBox().min().x, meshFn->boundingBox().max().x, (int)S.size());
@@ -166,7 +185,9 @@ void BoundingProxy::editScaleField(double wx, double wy, double wz, double sigma
         }
     }
 
-    showScaleFieldColors((int)S.size(), bs);
+    if (show) {
+        showScaleFieldColors((int)S.size(), bs);
+    }
 }
 
 bool BoundingProxy::raycastToMesh(MPoint origin, MVector dir, MPoint& outHitPoint) {
