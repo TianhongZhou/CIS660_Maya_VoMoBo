@@ -162,9 +162,9 @@ double BoundingProxy::phi(MPoint x, double sprev, double s, double sigma, MPoint
 void BoundingProxy::editScaleField(double wx, double wy, double wz, double sigma, double s, MString mode, double bs, bool show) {
     editedS = true;
 
-    int vx = (int)world2Voxel(wx, meshFn->boundingBox().min().x, meshFn->boundingBox().max().x, (int)S.size());
-    int vy = (int)world2Voxel(wy, meshFn->boundingBox().min().y, meshFn->boundingBox().max().y, (int)S.size());
-    int vz = (int)world2Voxel(wz, meshFn->boundingBox().min().z, meshFn->boundingBox().max().z, (int)S.size());
+    int vx = (int)world2Voxel(wx, bboxMin.x, bboxMax.x, (int)S.size());
+    int vy = (int)world2Voxel(wy, bboxMin.y, bboxMax.y, (int)S.size());
+    int vz = (int)world2Voxel(wz, bboxMin.z, bboxMax.z, (int)S.size());
 
     for (int x = max(0, vx - (int)sigma); x < min((int)S.size(), vx + (int)sigma); x++) {
         for (int y = max(0, vy - (int)sigma); y < min((int)S.size(), vy + (int)sigma); y++) {
@@ -251,9 +251,9 @@ void BoundingProxy::showScaleFieldColors(int res, double baseScale) {
     for (unsigned int i = 0; i < vertices.length(); i++) {
         MPoint p = vertices[i];
         // Convert p to voxel space
-        int vx = (int)world2Voxel(p.x, meshFn->boundingBox().min().x, meshFn->boundingBox().max().x, (int)S.size());
-        int vy = (int)world2Voxel(p.y, meshFn->boundingBox().min().y, meshFn->boundingBox().max().y, (int)S.size());
-        int vz = (int)world2Voxel(p.z, meshFn->boundingBox().min().z, meshFn->boundingBox().max().z, (int)S.size());
+        int vx = (int)world2Voxel(p.x, bboxMin.x, bboxMax.x, (int)S.size());
+        int vy = (int)world2Voxel(p.y, bboxMin.y, bboxMax.y, (int)S.size());
+        int vz = (int)world2Voxel(p.z, bboxMin.z, bboxMax.z, (int)S.size());
 
         double sVal = S[vx][vy][vz];
         double normS;
@@ -377,9 +377,8 @@ void BoundingProxy::createMayaMesh(MString name) {
     dagNode.setName(name);
 
     // Align mesh to original mesh
-    MBoundingBox bboxA = this->meshFn->boundingBox();
     MBoundingBox bboxB = meshFn.boundingBox();
-    MPoint centerOffset = bboxA.center() - bboxB.center();
+    MPoint centerOffset = (bboxMin + bboxMax) / 2.0 - bboxB.center();
     MString moveCmd = "xform -ws -translation ";
     moveCmd += centerOffset.x; moveCmd += " ";
     moveCmd += centerOffset.y; moveCmd += " ";
@@ -778,8 +777,8 @@ void BoundingProxy::voxelizationCPU(int res) {
     meshFn->getTriangles(triangleCounts, triangleIndices);
 
     // Get bounding box
-    MPoint min = meshFn->boundingBox().min();
-    MPoint max = meshFn->boundingBox().max();
+    MPoint min = bboxMin;
+    MPoint max = bboxMax;
 
     double minX = min.x, minY = min.y, minZ = min.z;
     double maxX = max.x, maxY = max.y, maxZ = max.z;
@@ -875,11 +874,13 @@ MStatus BoundingProxy::selectMesh() {
     MFnTransform transformFn(transformPath);
     meshName = transformFn.name();
 
-    MString freezeCommand = "makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1 " + meshName + ";";
-    MGlobal::executeCommand(freezeCommand);
-
     delete meshFn;
     meshFn = new MFnMesh(meshPath);
+
+    worldMatrix = meshPath.inclusiveMatrix();
+    bboxMin = meshFn->boundingBox().min() * worldMatrix;
+    bboxMax = meshFn->boundingBox().max() * worldMatrix;
+
     return MS::kSuccess;
 }
 

@@ -75,6 +75,9 @@ public:
     MDagPath meshPath;
     MFnMesh* meshFn;
     MString meshName;
+    MMatrix worldMatrix;
+    MPoint bboxMin;
+    MPoint bboxMax;
     vector<vector<vector<bool>>> G;
     MVector deltaP;
     unordered_map<int, vector<vector<vector<bool>>>> GHat;
