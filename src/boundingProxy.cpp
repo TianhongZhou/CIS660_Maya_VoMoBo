@@ -77,7 +77,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             // Compute D
             dilationCPU(SE, baseScale);
             // Compute Dc
-            connectedContourCPU();
+            connectedContourCPU(D);
             // Compute DcHat
             scaleAugmentedPyramidCPU();
             // Compute E
@@ -95,7 +95,6 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             // TODO: GPU
         }
     }
-    // For debug purpose only
     else if (command == "show_voxel") {
         int resolution = args.asInt(1);
         MString SE = args.asString(3);
@@ -106,18 +105,14 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
 
         if (args.asString(2) == "cpu") {
             voxelizationCPU(resolution);
-            pyramidGCPU();
-            dilationCPU(SE, baseScale);
-            connectedContourCPU();
-            scaleAugmentedPyramidCPU();
-            erosionCPU();
+            connectedContourCPU(G);
         }
         else {
             // TODO: GPU
         }
 
         // Can show G, GHat[i], D, Dc, DcHat[i].first, E
-        showVoxel(E, "E");
+        showVoxel(Dc, "voxels");
     }
     else {
         MGlobal::displayWarning("Unknown command argument!");
@@ -132,7 +127,7 @@ double BoundingProxy::gamma(double t, double s, double sigma) {
         return 1.0;
     }
     else if (t >= s && t < s + sigma) {
-        return pow(1.0 - pow(t / sigma, 2.0), 2.0);
+        return pow(1.0 - pow((t - s) / sigma, 2.0), 2.0);
     }
     else {
         return 0.0;
@@ -360,9 +355,27 @@ void BoundingProxy::createMayaMesh(MString name) {
     MFnDagNode dagNode(newMesh);
     dagNode.setName(name);
 
-    MString assignMaterialCmd = "sets -e -forceElement initialShadingGroup " + name + ";";
-    MGlobal::executeCommand(assignMaterialCmd);
+    // Align mesh to original mesh
+    MBoundingBox bboxA = this->meshFn->boundingBox();
+    MBoundingBox bboxB = meshFn.boundingBox();
+    MPoint centerOffset = bboxA.center() - bboxB.center();
+    MString moveCmd = "xform -ws -translation ";
+    moveCmd += centerOffset.x; moveCmd += " ";
+    moveCmd += centerOffset.y; moveCmd += " ";
+    moveCmd += centerOffset.z; moveCmd += " ";
+    moveCmd += name + ";";
+    MGlobal::executeCommand(moveCmd);
 
+    // Shading the mesh generated
+    MString matName = "semiTransparentMat";
+    MString shadingGroup = matName + "SG";
+    MGlobal::executeCommand("shadingNode -asShader lambert -name " + matName);
+    MGlobal::executeCommand("setAttr \"" + matName + ".transparency\" -type double3 0.8 0.8 0.8");
+    MGlobal::executeCommand("sets -renderable true -noSurfaceShader true -empty -name " + shadingGroup);
+    MGlobal::executeCommand("connectAttr -f " + matName + ".outColor " + shadingGroup + ".surfaceShader");
+    MGlobal::executeCommand("sets -e -forceElement " + shadingGroup + " " + name + ";");
+
+    // Remeshing
     MBoundingBox bbox = meshFn.boundingBox();
     double maxDim = std::max({ bbox.width(), bbox.height(), bbox.depth() });
     double edgeLen = maxDim * 0.085;
@@ -546,19 +559,19 @@ void BoundingProxy::scaleAugmentedPyramidCPU() {
 }
 
 // Compute Dc from D using 6-connected contour
-void BoundingProxy::connectedContourCPU() {
-    int N = (int) D.size();
+void BoundingProxy::connectedContourCPU(vector<vector<vector<bool>>> grid) {
+    int N = (int)grid.size();
     vector<MPoint> r = {{0,0,1}, {0,1,0}, {1,0,0}, {0,0,-1}, {0,-1,0}, {-1,0,0}};
-    Dc = D;
+    Dc = grid;
 
     for (int x = 1; x < N - 1; x++) {
         for (int y = 1; y < N - 1; y++) {
             for (int z = 1; z < N - 1; z++) {
-                if (D[x][y][z]) {
+                if (grid[x][y][z]) {
                     bool flag = true;
                     for (int i = 0; i < r.size(); i++) {
                         MPoint p = MPoint(x, y, z) + r[i];
-                        if (!D[(int) p.x][(int) p.y][(int) p.z]) {
+                        if (!grid[(int) p.x][(int) p.y][(int) p.z]) {
                             Dc[x][y][z] = true;
                             flag = false;
                             break;

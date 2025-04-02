@@ -42,9 +42,14 @@ class GeneratePluginUI(QtWidgets.QWidget):
         self.resolution_dropdown = QtWidgets.QComboBox()
         self.resolution_values = [8, 16, 32, 64, 128, 256, 512, 1024, 2048]
         self.resolution_dropdown.addItems(map(str, self.resolution_values))
-        self.resolution_dropdown.setCurrentText("16")
+        self.resolution_dropdown.setCurrentText("64")
         voxel_layout.addWidget(QtWidgets.QLabel("Resolution:"))
         voxel_layout.addWidget(self.resolution_dropdown)
+        
+        self.voxel_button = QtWidgets.QPushButton("Show Voxel")
+        self.voxel_button.clicked.connect(self.voxel_action)
+        voxel_layout.addWidget(self.voxel_button)
+
         voxel_group.setLayout(voxel_layout)
         layout.addWidget(voxel_group)
 
@@ -66,7 +71,7 @@ class GeneratePluginUI(QtWidgets.QWidget):
         morph_layout.addWidget(QtWidgets.QLabel("Brush Size:"))
         self.brush_size_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.brush_size_slider.setRange(1, 300)
-        self.brush_size_slider.setValue(10)
+        self.brush_size_slider.setValue(20)
         self.brush_size_slider.valueChanged.connect(self.refresh_scale_field)
         morph_layout.addWidget(self.brush_size_slider)
 
@@ -92,6 +97,10 @@ class GeneratePluginUI(QtWidgets.QWidget):
         morph_layout.addWidget(self.increase_radio)
         morph_layout.addWidget(self.decrease_radio)
         morph_layout.addWidget(self.erase_radio)
+        
+        self.scale_field_button = QtWidgets.QPushButton("Reset Scale Field")
+        self.scale_field_button.clicked.connect(self.reset_scale_field_action)
+        morph_layout.addWidget(self.scale_field_button)
 
         morph_group.setLayout(morph_layout)
         layout.addWidget(morph_group)
@@ -110,19 +119,28 @@ class GeneratePluginUI(QtWidgets.QWidget):
         mesh_block_layout.addWidget(self.sphere_radio)
         mesh_block_layout.addWidget(self.cube_radio)
 
-        self.max_err_spinbox = QtWidgets.QDoubleSpinBox()
-        self.max_err_spinbox.setRange(0.001, 9999.999)
-        self.max_err_spinbox.setDecimals(3)
-        self.max_err_spinbox.setSingleStep(0.001)
-        self.max_err_spinbox.setValue(1.000)
-        mesh_block_layout.addWidget(QtWidgets.QLabel("Max Error (x1e-5):"))
-        mesh_block_layout.addWidget(self.max_err_spinbox)
+        self.max_err_combobox = QtWidgets.QComboBox()
+        self.max_err_combobox.addItems([
+            "High Fidelity (Most Polygons)",
+            "Balanced (Default)",
+            "Light Reduction",
+            "Aggressive Reduction"
+        ])
+        self.max_err_combobox.setCurrentText("Balanced (Default)")
+        self.max_err_map = {
+            "High Fidelity (Most Polygons)": 0.1,
+            "Balanced (Default)": 1.0,
+            "Light Reduction": 10.0,
+            "Aggressive Reduction": 100.0
+        }
+        mesh_block_layout.addWidget(QtWidgets.QLabel("Polygon Reduction Level:"))
+        mesh_block_layout.addWidget(self.max_err_combobox)
 
         mesh_block_layout.addWidget(QtWidgets.QLabel("Simplify Method:"))
         self.simplify_group = QtWidgets.QButtonGroup(self)
         self.cqem_radio = QtWidgets.QRadioButton("CQEM")
         self.qem_radio = QtWidgets.QRadioButton("QEM")
-        self.cqem_radio.setChecked(True)
+        self.qem_radio.setChecked(True)
         self.simplify_group.addButton(self.cqem_radio)
         self.simplify_group.addButton(self.qem_radio)
         mesh_block_layout.addWidget(self.cqem_radio)
@@ -145,14 +163,8 @@ class GeneratePluginUI(QtWidgets.QWidget):
         button_layout.addWidget(self.cpu_radio)
         button_layout.addWidget(self.gpu_radio)
 
-        self.scale_field_button = QtWidgets.QPushButton("Reset Scale Field")
-        self.scale_field_button.clicked.connect(self.reset_scale_field_action)
-        self.voxel_button = QtWidgets.QPushButton("Show Voxel")
-        self.voxel_button.clicked.connect(self.voxel_action)
         self.generate_button = QtWidgets.QPushButton("Generate")
         self.generate_button.clicked.connect(self.generate_action)
-        button_layout.addWidget(self.scale_field_button)
-        # button_layout.addWidget(self.voxel_button)
         button_layout.addWidget(self.generate_button)
         button_group.setLayout(button_layout)
         layout.addWidget(button_group)
@@ -214,11 +226,14 @@ class GeneratePluginUI(QtWidgets.QWidget):
         seMode = "cube" if self.cube_radio.isChecked() else "sphere"
         baseScale = self.base_scale_spinbox.value()
         self.action_executed = True
-        maxError = self.max_err_spinbox.value()
+        simplification_level = self.max_err_combobox.currentText()
+        maxError = self.max_err_map[simplification_level]
         simplify = "cqem" if self.cqem_radio.isChecked() else "qem"
         cmds.evalDeferred(f'cmds.BoundingProxyCmd("generate", {resolution}, "{mode}", "{seMode}", {baseScale}, "{self.selected_object}", {maxError}, "{simplify}")')
 
     def refresh_scale_field(self):
+        self.edit_scale_checkbox.setChecked(True)
+
         resolution = int(self.resolution_dropdown.currentText())
         baseScale = self.base_scale_spinbox.value()
         radius = self.brush_size_slider.value()

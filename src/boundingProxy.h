@@ -12,6 +12,7 @@
 #include <maya/MFnTransform.h>
 #include <maya/MFnSet.h>
 #include <maya/MObject.h>
+#include <maya/MMatrix.h>
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -107,7 +108,7 @@ public:
     void pyramidGCPU();
     void resetScaleField();
     void dilationCPU(MString SE, double baseScale);
-    void connectedContourCPU();
+    void connectedContourCPU(vector<vector<vector<bool>>> grid);
     void scaleAugmentedPyramidCPU();
     template <typename T, typename CombineOp>
     vector<vector<vector<T>>> calculatePyramid(vector<vector<vector<T>>> prev, vector<MPoint> t, CombineOp combine);
