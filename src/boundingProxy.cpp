@@ -405,6 +405,39 @@ void BoundingProxy::createMayaMesh(MString name) {
     remeshCmd += "-collapseThreshold 1.0 ";
     remeshCmd += name + ";";
     MGlobal::executeCommand(remeshCmd);
+
+    // Bind mesh if joints exits
+    MDagPath shapePath = meshPath;
+    shapePath.extendToShape();
+    MObject shapeNode = shapePath.node();
+
+    MItDependencyGraph dgIter(
+        shapeNode,
+        MFn::kSkinClusterFilter,
+        MItDependencyGraph::kUpstream,
+        MItDependencyGraph::kDepthFirst, 
+        MItDependencyGraph::kPlugLevel 
+    );
+
+    if (!dgIter.isDone()) {
+        MObject skinClusterObj = dgIter.currentItem();
+        MFnSkinCluster skinFn(skinClusterObj);
+
+        MDagPathArray jointPaths;
+        skinFn.influenceObjects(jointPaths);
+
+        for (unsigned int i = 0; i < jointPaths.length(); ++i) {
+            MGlobal::executeCommand("select -add " + jointPaths[i].fullPathName());
+        }
+
+        MGlobal::executeCommand("select -add " + name);
+        MGlobal::executeCommand("skinCluster -toSelectedBones -bindMethod 0 -skinMethod 0 -normalizeWeights 1;");
+        MString cmd;
+        cmd += "copySkinWeights -noMirror -surfaceAssociation closestPoint -influenceAssociation closestJoint ";
+        cmd += "-normalize true ";
+        cmd += meshName + " " + name + ";";
+        MGlobal::executeCommand(cmd);
+    }
 }
 
 // Convert outputG to mesh using cube marchings from igl adn eigen

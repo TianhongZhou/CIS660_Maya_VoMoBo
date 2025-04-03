@@ -13,6 +13,10 @@
 #include <maya/MFnSet.h>
 #include <maya/MObject.h>
 #include <maya/MMatrix.h>
+#include <maya/MItDependencyGraph.h>
+#include <maya/MFnSkinCluster.h>
+#include <maya/MDagPathArray.h>
+#include <maya/MFnDagNode.h>
 #include <iostream>
 #include <vector>
 #include <cmath>
