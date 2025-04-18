@@ -391,6 +391,7 @@ void BoundingProxy::createMayaMesh(MString name) {
     MString shadingGroup = matName + "SG";
     MGlobal::executeCommand("shadingNode -asShader lambert -name " + matName);
     MGlobal::executeCommand("setAttr \"" + matName + ".transparency\" -type double3 0.8 0.8 0.8");
+    MGlobal::executeCommand("setAttr \"" + matName + ".color\" -type double3 1 0 0");
     MGlobal::executeCommand("sets -renderable true -noSurfaceShader true -empty -name " + shadingGroup);
     MGlobal::executeCommand("connectAttr -f " + matName + ".outColor " + shadingGroup + ".surfaceShader");
     MGlobal::executeCommand("sets -e -forceElement " + shadingGroup + " " + name + ";");
