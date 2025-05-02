@@ -1,5 +1,5 @@
-#include "boundingProxy.h"
-
+﻿#include "boundingProxy.h"
+#include "../Header.h"
 std::vector<std::vector<std::vector<double>>> BoundingProxy::S;
 std::vector<std::vector<std::vector<double>>> BoundingProxy::prevS;
 bool BoundingProxy::editedS = false;
@@ -111,7 +111,19 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             createMayaMesh("final");
         }
         else {
-            // TODO: GPU
+            
+
+            // === Common pipeline ===
+            pyramidGCPU();
+            dilationCPU(SE, baseScale);
+            connectedContourCPU(D);
+            scaleAugmentedPyramidCPU();
+            erosionCPU();
+            outputG = E;
+            cubeMarching();
+            simplifyMesh(maxError, simplifyMethod);
+            createMayaMesh("final");
+
         }
     }
     else if (command == "show_voxel") {
@@ -128,8 +140,69 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         }
         else {
             // TODO: GPU
-        }
+            MPointArray verts;
+            meshFn->getPoints(verts, MSpace::kWorld);
+            MIntArray triCounts, triIdx;
+            meshFn->getTriangles(triCounts, triIdx);
+            int numTris = triIdx.length() / 3;
+            MGlobal::displayInfo(MString("[DEBUG] numTris = ") + numTris);
 
+            vector<double> v0x(numTris), v0y(numTris), v0z(numTris);
+            vector<double> v1x(numTris), v1y(numTris), v1z(numTris);
+            vector<double> v2x(numTris), v2y(numTris), v2z(numTris);
+            for (int t = 0; t < numTris; ++t) {
+                int i0 = triIdx[3 * t], i1 = triIdx[3 * t + 1], i2 = triIdx[3 * t + 2];
+                auto& A = verts[i0], & B = verts[i1], & C = verts[i2];
+                v0x[t] = A.x; v0y[t] = A.y; v0z[t] = A.z;
+                v1x[t] = B.x; v1y[t] = B.y; v1z[t] = B.z;
+                v2x[t] = C.x; v2y[t] = C.y; v2z[t] = C.z;
+            }
+            // 2) Compute bounds and scale
+            auto bb = meshFn->boundingBox();
+            double scale = resolution * resolution * 5.0;
+            double minX = bb.min().x * scale, maxX = bb.max().x * scale;
+            double minY = bb.min().y * scale, maxY = bb.max().y * scale;
+            double minZ = bb.min().z * scale, maxZ = bb.max().z * scale;
+            MGlobal::displayInfo(MString("[DEBUG] bounds scaled: (") + minX + "," + minY + "," + minZ + ") -> (" + maxX + "," + maxY + "," + maxZ + ")");
+            for (int t = 0; t < numTris; ++t) {
+                v0x[t] *= scale; v0y[t] *= scale; v0z[t] *= scale;
+                v1x[t] *= scale; v1y[t] *= scale; v1z[t] *= scale;
+                v2x[t] *= scale; v2y[t] *= scale; v2z[t] *= scale;
+            }
+            // 3) Run CUDA voxelizer
+            int res = resolution;
+            size_t N = size_t(res) * res * res;
+            vector<unsigned char> flatG(N);
+            voxelizeOnGpu(
+                v0x.data(), v0y.data(), v0z.data(),
+                v1x.data(), v1y.data(), v1z.data(),
+                v2x.data(), v2y.data(), v2z.data(),
+                numTris, res,
+                minX, maxX,
+                minY, maxY,
+                minZ, maxZ,
+                flatG.data()
+            );
+           
+            G.assign(resolution, vector<vector<bool>>(resolution, vector<bool>(resolution)));
+            for (int x = 0; x < resolution; ++x)
+                for (int y = 0; y < resolution; ++y)
+                    for (int z = 0; z < resolution; ++z) {
+                        size_t idx = (x * resolution + y) * resolution + z;
+                        G[x][y][z] = (flatG[idx] != 0);
+                    }
+
+            MPoint bbMin = meshFn->boundingBox().min();
+            MPoint bbMax = meshFn->boundingBox().max();
+            deltaP = MPoint(
+                (bbMax.x - bbMin.x) / resolution,
+                (bbMax.y - bbMin.y) / resolution,
+                (bbMax.z - bbMin.z) / resolution
+            );
+            connectedContourCPU(G);
+
+        }
+        
         // Can show G, GHat[i], D, Dc, DcHat[i].first, E
         showVoxel(Dc, "voxels");
     }

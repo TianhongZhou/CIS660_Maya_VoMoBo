@@ -1,14 +1,14 @@
-﻿  boundingProxy.cpp
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\MathFunctions.h(781,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\Half.h(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\BFloat16.h(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\GenericPacketMathFunctions.h(1288,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\arch\Default\GenericPacketMathFunctions.h(1881,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-F:\document\University\CIS 660\Project\VoMoBo\libs\Eigen\src\Core\SkewSymmetricMatrix3.h(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-     Creating library F:\document\University\CIS 660\Project\VoMoBo\x64\Release\VoMoBo.lib and object F:\document\University\CIS 660\Project\VoMoBo\x64\Release\VoMoBo.exp
+﻿  Compiling CUDA source file File.cu...
+  
+  D:\CIS660\CIS660_Maya_VoMoBo>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin\nvcc.exe" -gencode=arch=compute_52,code=\"sm_52,compute_52\" --use-local-env -ccbin "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64" -x cu   -ID:\MAYA\Maya2025\include -ID:\CIS660\CIS660_Maya_VoMoBo\libs -ID:\CIS660\CIS660_Maya_VoMoBo\libs\qpOASES\include -ID:\CIS660\CIS660_Maya_VoMoBo\libs\OpenMesh\src -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include"     --keep-dir VoMoBo\x64\Release  -maxrregcount=0   --machine 64 --compile -cudart static    -DNT_PLUGIN -Xcompiler "/EHsc /W3 /nologo /O2 /FS   /MD " -Xcompiler "/FdVoMoBo\x64\Release\vc143.pdb" -o D:\CIS660\CIS660_Maya_VoMoBo\VoMoBo\x64\Release\File.cu.obj "D:\CIS660\CIS660_Maya_VoMoBo\File.cu" 
+  File.cu
+  tmpxft_00004fb0_00000000-7_File.cudafe1.cpp
+  boundingProxy.cpp
+  brushContext.cpp
+  MayaPlugin.cpp
+     Creating library D:\CIS660\CIS660_Maya_VoMoBo\x64\Release\VoMoBo.lib and object D:\CIS660\CIS660_Maya_VoMoBo\x64\Release\VoMoBo.exp
   Generating code
-  1 of 4748 functions (<0.1%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    6 functions had inline decision re-evaluated but remain unchanged
+  Previous IPDB not found, fall back to full compilation.
+  All 4802 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
   Finished generating code
-  VoMoBo.vcxproj -> F:\document\University\CIS 660\Project\VoMoBo\x64\Release\VoMoBo.mll
+  VoMoBo.vcxproj -> D:\CIS660\CIS660_Maya_VoMoBo\x64\Release\VoMoBo.mll

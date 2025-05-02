@@ -20,10 +20,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\boundingProxy.cpp" />
+    <ClCompile Include="src\brushContext.cpp" />
     <ClCompile Include="src\MayaPlugin.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Header.h" />
     <ClInclude Include="src\boundingProxy.h" />
+    <ClInclude Include="src\brushContext.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="File.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -61,6 +67,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.6.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -79,6 +86,9 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetExt>.mll</TargetExt>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(CUDA_PATH)\include；</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(CUDA_PATH)\lib\x64;$(CUDA_PATH)\lib\x64;</LibraryPath>
+    <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(CUDA_PATH)\include；</ExternalIncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -128,7 +138,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions> NT_PLUGIN</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>F:\software\Maya\Maya2025\include;F:\document\University\CIS 660\Project\VoMoBo\libs;F:\document\University\CIS 660\Project\VoMoBo\libs\qpOASES\include;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\MAYA\Maya2025\include;D:\CIS660\CIS660_Maya_VoMoBo\libs;D:\CIS660\CIS660_Maya_VoMoBo\libs\qpOASES\include;D:\CIS660\CIS660_Maya_VoMoBo\libs\OpenMesh\src;$(CUDA_PATH)\include;</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -137,11 +147,12 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)$(ProjectName).mll</OutputFile>
-      <AdditionalLibraryDirectories>F:\software\Maya\Maya2025\lib;F:\document\University\CIS 660\Project\VoMoBo\libs\qpOASES\build\libs\Release;F:\document\University\CIS 660\Project\VoMoBo\libs\OpenMesh\build\Build\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaUI.lib;OpenMayaAnim.lib;OpenMayaFX.lib;OpenMayaRender.lib;Image.lib;opengl32.lib;qpOASES.lib;OpenMeshCore.lib;OpenMeshTools.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\MAYA\Maya2025\lib;D:\CIS660\CIS660_Maya_VoMoBo\libs\qpOASES\build\libs\Release;D:\CIS660\CIS660_Maya_VoMoBo\libs\OpenMesh\build\Build\lib;$(CUDA_PATH)\lib\x64;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaUI.lib;OpenMayaAnim.lib;OpenMayaFX.lib;OpenMayaRender.lib;Image.lib;opengl32.lib;qpOASES.lib;OpenMeshCore.lib;OpenMeshTools.lib;cudart.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.6.targets" />
   </ImportGroup>
 </Project>
