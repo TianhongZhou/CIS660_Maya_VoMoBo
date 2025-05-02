@@ -4,10 +4,6 @@
 extern "C" {
 #endif
 
-    /**
-     * A plain‐old‐data (POD) triangle.  No CUDA headers here,
-     * so this can be included in your Maya plugin .cpp without any conflict.
-     */
     typedef struct {
         double v0x, v0y, v0z;
         double v1x, v1y, v1z;
@@ -23,6 +19,26 @@ extern "C" {
         double              minZ, double maxZ,
         unsigned int* outGrid
     );
+
+    void computePyramidLevelOnGpu(
+        const unsigned char* prev,
+        unsigned char* curr,
+        int                  NiPrev
+    );
+
+   
+    void spatiallyVaryingDilationOnGpu(
+        const unsigned char* G0_host,
+        const unsigned char* GHat_packed,
+        const double* S_host,
+        unsigned char* D_host,
+        int                  res,
+        int                  iMax,
+        double               dP,
+        int                  useCube
+    );
+
+   
 
 #ifdef __cplusplus
 }

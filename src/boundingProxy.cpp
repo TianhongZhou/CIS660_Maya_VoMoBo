@@ -90,12 +90,17 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         selectMesh();
 
         if (args.asString(2) == "cpu") {
+
             // Compute G
             voxelizationCPU(resolution);
             // Compute GHat
             pyramidGCPU();
             // Compute D
+
+            //GPU modify the S, so reinitialize the S everytime for convinence
+            editedS = false;
             dilationCPU(SE, baseScale);
+
             // Compute Dc
             connectedContourCPU(D);
             // Compute DcHat
@@ -112,33 +117,41 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             createMayaMesh("final");
         }
         else {
+
+            resetScaleField();
+            S.assign(resolution,
+                vector<vector<double>>(resolution,
+                    vector<double>(resolution, baseScale)));
+            editedS = true;
+
+
             MPointArray verts;
             meshFn->getPoints(verts, MSpace::kWorld);
             MIntArray triCounts, triIdx;
             meshFn->getTriangles(triCounts, triIdx);
-            int numTris = triIdx.length()/3;
+            int numTris = triIdx.length() / 3;
 
             vector<GpuTriangle> tris(numTris);
             for (int t = 0; t < numTris; ++t) {
-                int i0 = triIdx[3*t], i1 = triIdx[3*t+1], i2 = triIdx[3*t+2];
-                auto &A = verts[i0], &B = verts[i1], &C = verts[i2];
+                int i0 = triIdx[3 * t + 0], i1 = triIdx[3 * t + 1], i2 = triIdx[3 * t + 2];
+                auto& A = verts[i0], & B = verts[i1], & C = verts[i2];
                 tris[t].v0x = A.x; tris[t].v0y = A.y; tris[t].v0z = A.z;
                 tris[t].v1x = B.x; tris[t].v1y = B.y; tris[t].v1z = B.z;
                 tris[t].v2x = C.x; tris[t].v2y = C.y; tris[t].v2z = C.z;
             }
 
             auto bb = meshFn->boundingBox();
-            double scale = double(resolution)*resolution*5.0;
-            double minX = bb.min().x*scale, maxX = bb.max().x*scale;
-            double minY = bb.min().y*scale, maxY = bb.max().y*scale;
-            double minZ = bb.min().z*scale, maxZ = bb.max().z*scale;
-            for (int t = 0; t < numTris; ++t) {
-                tris[t].v0x *= scale; tris[t].v0y *= scale; tris[t].v0z *= scale;
-                tris[t].v1x *= scale; tris[t].v1y *= scale; tris[t].v1z *= scale;
-                tris[t].v2x *= scale; tris[t].v2y *= scale; tris[t].v2z *= scale;
+            double scale = double(resolution) * resolution * 5.0;
+            double minX = bb.min().x * scale, maxX = bb.max().x * scale;
+            double minY = bb.min().y * scale, maxY = bb.max().y * scale;
+            double minZ = bb.min().z * scale, maxZ = bb.max().z * scale;
+            for (auto& T : tris) {
+                T.v0x *= scale; T.v0y *= scale; T.v0z *= scale;
+                T.v1x *= scale; T.v1y *= scale; T.v1z *= scale;
+                T.v2x *= scale; T.v2y *= scale; T.v2z *= scale;
             }
 
-            size_t N = size_t(resolution)*resolution*resolution;
+            size_t N = size_t(resolution) * resolution * resolution;
             vector<unsigned int> flatI(N);
             rasterizeMeshOnGpuTriangleAoS(
                 tris.data(), numTris, resolution,
@@ -146,32 +159,90 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
                 flatI.data()
             );
 
+            // 2) Build flatG0 + 3D G
+            vector<unsigned char> flatG0(N);
             G.assign(resolution,
-              vector<vector<bool>>(resolution, vector<bool>(resolution)));
-            for (int x = 0; x < resolution; ++x)
-            for (int y = 0; y < resolution; ++y)
-            for (int z = 0; z < resolution; ++z) {
-                size_t idx = (x*resolution + y)*resolution + z;
-                G[x][y][z] = (flatI[idx] & 1u) != 0;
+                vector<vector<bool>>(resolution,
+                    vector<bool>(resolution, false)));
+            for (size_t i = 0; i < N; ++i) {
+                bool occ = (flatI[i] & 1u) != 0;
+                flatG0[i] = occ ? 1 : 0;
+                int x = i / (resolution * resolution);
+                int y = (i / resolution) % resolution;
+                int z = i % resolution;
+                G[x][y][z] = occ;
             }
- 
-            MPoint bbMin = meshFn->boundingBox().min();
-            MPoint bbMax = meshFn->boundingBox().max();
-            deltaP = MPoint(
-              (bbMax.x - bbMin.x)/resolution,
-              (bbMax.y - bbMin.y)/resolution,
-              (bbMax.z - bbMin.z)/resolution
-            );
-            
-           
 
-            // === Common pipeline ===
-            pyramidGCPU();
-            dilationCPU(SE, baseScale);
+            // 3) recompute deltaP in world units
+            MPoint bbMin = bb.min(), bbMax = bb.max();
+            deltaP = MPoint(
+                (bbMax.x - bbMin.x) / resolution,
+                (bbMax.y - bbMin.y) / resolution,
+                (bbMax.z - bbMin.z) / resolution
+            );
+
+            // 4) build Boolean pyramid levels on GPU
+            int iMax = int(std::log2(double(resolution)));
+            vector<vector<unsigned char>> GH(iMax + 1);
+            GH[0] = std::move(flatG0);
+            for (int lvl = 1, dim = resolution; lvl <= iMax; ++lvl) {
+                int prevDim = dim;  dim >>= 1;
+                GH[lvl].resize(size_t(dim) * dim * dim);
+                computePyramidLevelOnGpu(
+                    GH[lvl - 1].data(),
+                    GH[lvl].data(),
+                    prevDim
+                );
+            }
+
+            // 5) pack levels 1..iMax into one buffer
+            size_t ghTotal = 0;
+            for (int lvl = 1; lvl <= iMax; ++lvl) {
+                int d = resolution >> lvl;
+                ghTotal += size_t(d) * d * d;
+            }
+            vector<unsigned char> GH_packed;
+            GH_packed.reserve(ghTotal);
+            for (int lvl = 1; lvl <= iMax; ++lvl) {
+                GH_packed.insert(
+                    GH_packed.end(),
+                    GH[lvl].begin(), GH[lvl].end()
+                );
+            }
+
+            // 6)dilation on GPU
+            vector<double> flatS(N, baseScale);     
+            vector<unsigned char> flatD(N);
+            spatiallyVaryingDilationOnGpu(
+                GH[0].data(),
+                GH_packed.data(),
+                flatS.data(),
+                flatD.data(),
+                resolution,
+                iMax,
+                deltaP.x,
+                (SE == "cube") ? 1 : 0
+            );
+
+            // 7) unpack flatD → D 3D
+            D.assign(resolution,
+                vector<vector<bool>>(resolution,
+                    vector<bool>(resolution, false)));
+            for (int x = 0; x < resolution; ++x)
+                for (int y = 0; y < resolution; ++y)
+                    for (int z = 0; z < resolution; ++z) {
+                        size_t idx = (x * resolution + y) * resolution + z;
+                        D[x][y][z] = (flatD[idx] != 0);
+                    }
+
+
+          
             connectedContourCPU(D);
             scaleAugmentedPyramidCPU();
             erosionCPU();
-            outputG = E;
+            outputG = E;        
+
+          
             cubeMarching();
             simplifyMesh(maxError, simplifyMethod);
             createMayaMesh("final");
@@ -191,6 +262,9 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             connectedContourCPU(G);
         }
         else {
+
+            
+
             MPointArray verts;
             meshFn->getPoints(verts, MSpace::kWorld);
             MIntArray triCounts, triIdx;
@@ -1075,3 +1149,6 @@ void BoundingProxy::showVoxel(vector<vector<vector<bool>>> grid, MString name) {
         }
     }
 }
+
+
+
