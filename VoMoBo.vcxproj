@@ -29,7 +29,9 @@
     <ClInclude Include="src\brushContext.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="File.cu" />
+    <CudaCompile Include="File.cu">
+      <CudaRuntime Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Static</CudaRuntime>
+    </CudaCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -150,6 +152,9 @@
       <AdditionalLibraryDirectories>D:\MAYA\Maya2025\lib;D:\CIS660\CIS660_Maya_VoMoBo\libs\qpOASES\build\libs\Release;D:\CIS660\CIS660_Maya_VoMoBo\libs\OpenMesh\build\Build\lib;$(CUDA_PATH)\lib\x64;</AdditionalLibraryDirectories>
       <AdditionalDependencies>Foundation.lib;OpenMaya.lib;OpenMayaUI.lib;OpenMayaAnim.lib;OpenMayaFX.lib;OpenMayaRender.lib;Image.lib;opengl32.lib;qpOASES.lib;OpenMeshCore.lib;OpenMeshTools.lib;cudart.lib;</AdditionalDependencies>
     </Link>
+    <CudaCompile>
+      <CudaRuntime>Shared</CudaRuntime>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,31 +1,38 @@
-#include "Header.h"
+﻿#include "Header.h"
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include <cmath>
+#include <device_atomic_functions.h> 
+#include <algorithm>
 
-constexpr double EPSILON = 1e-6;
+using std::min;
+using std::max;
 
-__device__ bool insideTriangleYZ(
-    double y0, double z0,
-    double y1, double z1,
-    double y2, double z2,
-    double y, double z)
-{
+constexpr double EPS = 1e-6;
+
+
+__device__ int clamp_idx(int v, int lo, int hi) {
+    return v < lo ? lo : (v > hi ? hi : v);
+}
+
+// YZ‐plane inside‐triangle test using POD Triangle
+__device__ bool insideYZ(const GpuTriangle& T, double y, double z) {
+    double y0 = T.v0y, z0 = T.v0z;
+    double y1 = T.v1y, z1 = T.v1z;
+    double y2 = T.v2y, z2 = T.v2z;
     double w0 = (y - y0) * (z1 - z0) - (z - z0) * (y1 - y0);
     double w1 = (y - y1) * (z2 - z1) - (z - z1) * (y2 - y1);
     double w2 = (y - y2) * (z0 - z2) - (z - z2) * (y0 - y2);
-    return (w0 >= 0 && w1 >= 0 && w2 >= 0) || (w0 <= 0 && w1 <= 0 && w2 <= 0);
+    return (w0 >= 0 && w1 >= 0 && w2 >= 0)
+        || (w0 <= 0 && w1 <= 0 && w2 <= 0);
 }
 
-__device__ bool intersectTriangleX(
-    double x0, double y0, double z0,
-    double x1, double y1, double z1,
-    double x2, double y2, double z2,
-    double y, double z,
-    double& xi)
-{
+// intersect triangle plane with ray at (y,z) → x
+__device__ bool intersectX(const GpuTriangle& T, double y, double z, double& xi) {
+    double x0 = T.v0x, y0 = T.v0y, z0 = T.v0z;
+    double x1 = T.v1x, y1 = T.v1y, z1 = T.v1z;
+    double x2 = T.v2x, y2 = T.v2y, z2 = T.v2z;
     double A = (y1 - y0) * (z2 - z0) - (z1 - z0) * (y2 - y0);
-    if (fabs(A) < EPSILON) return false;
+    if (fabs(A) < EPS) return false;
     double B = (z1 - z0) * (x2 - x0) - (x1 - x0) * (z2 - z0);
     double C = (x1 - x0) * (y2 - y0) - (y1 - y0) * (x2 - x0);
     double D = -(A * x0 + B * y0 + C * z0);
@@ -33,78 +40,99 @@ __device__ bool intersectTriangleX(
     return true;
 }
 
-__global__ void voxelizeKernel(
-    unsigned char* G, int res,
-    double minX, double maxX,
-    double minY, double maxY,
-    double minZ, double maxZ,
-    int numTris,
-    const double* v0x, const double* v0y, const double* v0z,
-    const double* v1x, const double* v1y, const double* v1z,
-    const double* v2x, const double* v2y, const double* v2z)
+// One CUDA thread per triangle
+extern "C" __global__ void triangleKernelAoS(
+    unsigned int* grid,
+    int              res,
+    double           minX, double maxX,
+    double           minY, double maxY,
+    double           minZ, double maxZ,
+    int              numTris,
+    const GpuTriangle* tris)
 {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    int z = blockIdx.z * blockDim.z + threadIdx.z;
-    if (x >= res || y >= res || z >= res) return;
+    int t = blockIdx.x * blockDim.x + threadIdx.x;
+    if (t >= numTris) return;
 
-    double fx = (maxX - minX) / (res - 1.0);
+    // load triangle
+    GpuTriangle T = tris[t];
+
+    // grid steps
     double fy = (maxY - minY) / (res - 1.0);
     double fz = (maxZ - minZ) / (res - 1.0);
-    double vx = minX + x * fx + fx * 0.5;
-    double vy = minY + y * fy + fy * 0.5;
-    double vz = minZ + z * fz + fz * 0.5;
+    double fx = (maxX - minX) / (res - 1.0);
 
-    int cnt = 0;
-    for (int t = 0; t < numTris; ++t) {
-        if (!insideTriangleYZ(v0y[t], v0z[t], v1y[t], v1z[t], v2y[t], v2z[t], vy, vz)) continue;
-        double xi;
-        if (!intersectTriangleX(v0x[t], v0y[t], v0z[t], v1x[t], v1y[t], v1z[t], v2x[t], v2y[t], v2z[t], vy, vz, xi)) continue;
-        if (vx >= xi) ++cnt;
+    // compute YZ AABB in voxel indices
+    int yv0 = clamp_idx(int((T.v0y - minY) / fy), 0, res - 1);
+    int yv1 = clamp_idx(int((T.v1y - minY) / fy), 0, res - 1);
+    int yv2 = clamp_idx(int((T.v2y - minY) / fy), 0, res - 1);
+    int zv0 = clamp_idx(int((T.v0z - minZ) / fz), 0, res - 1);
+    int zv1 = clamp_idx(int((T.v1z - minZ) / fz), 0, res - 1);
+    int zv2 = clamp_idx(int((T.v2z - minZ) / fz), 0, res - 1);
+
+    int ymin = min(min(yv0, yv1), yv2);
+    int ymax = max(max(yv0, yv1), yv2);
+    int zmin = min(min(zv0, zv1), zv2);
+    int zmax = max(max(zv0, zv1), zv2);
+
+    // rasterize this triangle's spans
+    for (int yv = ymin; yv <= ymax; ++yv) {
+        double yc = minY + yv * fy + 0.5 * fy;
+        for (int zv = zmin; zv <= zmax; ++zv) {
+            double zc = minZ + zv * fz + 0.5 * fz;
+            if (!insideYZ(T, yc, zc)) continue;
+
+            double xi;
+            if (!intersectX(T, yc, zc, xi)) continue;
+            int xv = clamp_idx(int((xi - minX) / fx), 0, res - 1);
+
+            // flip parity from xv..res-1 via atomicAdd
+            for (int xx = xv; xx < res; ++xx) {
+                size_t idx = (xx * res + yv) * res + zv;
+                atomicAdd(&grid[idx], 1u);
+            }
+        }
     }
-    size_t idx = (x * res + y) * res + z;
-    G[idx] = (cnt & 1) ? 1 : 0;
 }
 
-extern "C" void voxelizeOnGpu(
-    const double* v0x, const double* v0y, const double* v0z,
-    const double* v1x, const double* v1y, const double* v1z,
-    const double* v2x, const double* v2y, const double* v2z,
-    int numTris, int res,
-    double minX, double maxX,
-    double minY, double maxY,
-    double minZ, double maxZ,
-    unsigned char* outG)
+// Host wrapper
+extern "C" void rasterizeMeshOnGpuTriangleAoS(
+    const GpuTriangle* tris,
+    int              numTris,
+    int              res,
+    double           minX, double maxX,
+    double           minY, double maxY,
+    double           minZ, double maxZ,
+    unsigned int* outGrid)
 {
-    size_t triB = numTris * sizeof(double);
-    size_t voxB = size_t(res) * res * res * sizeof(unsigned char);
+    size_t N = size_t(res) * res * res;
+    unsigned int* d_grid = nullptr;
+    GpuTriangle* d_tris = nullptr;
 
-    double* d0x, * d0y, * d0z, * d1x, * d1y, * d1z, * d2x, * d2y, * d2z;
-    cudaMalloc(&d0x, triB); cudaMalloc(&d0y, triB); cudaMalloc(&d0z, triB);
-    cudaMalloc(&d1x, triB); cudaMalloc(&d1y, triB); cudaMalloc(&d1z, triB);
-    cudaMalloc(&d2x, triB); cudaMalloc(&d2y, triB); cudaMalloc(&d2z, triB);
-    cudaMemcpy(d0x, v0x, triB, cudaMemcpyHostToDevice);
-    cudaMemcpy(d0y, v0y, triB, cudaMemcpyHostToDevice);
-    cudaMemcpy(d0z, v0z, triB, cudaMemcpyHostToDevice);
-    cudaMemcpy(d1x, v1x, triB, cudaMemcpyHostToDevice);
-    cudaMemcpy(d1y, v1y, triB, cudaMemcpyHostToDevice);
-    cudaMemcpy(d1z, v1z, triB, cudaMemcpyHostToDevice);
-    cudaMemcpy(d2x, v2x, triB, cudaMemcpyHostToDevice);
-    cudaMemcpy(d2y, v2y, triB, cudaMemcpyHostToDevice);
-    cudaMemcpy(d2z, v2z, triB, cudaMemcpyHostToDevice);
+    // 1) allocate & clear the grid
+    cudaMalloc(&d_grid, N * sizeof(unsigned int));
+    cudaMemset(d_grid, 0, N * sizeof(unsigned int));
 
-    unsigned char* dG;
-    cudaMalloc(&dG, voxB);
+    // 2) upload the triangle array
+    cudaMalloc(&d_tris, numTris * sizeof(GpuTriangle));
+    cudaMemcpy(d_tris, tris, numTris * sizeof(GpuTriangle), cudaMemcpyHostToDevice);
 
-    dim3 blk(8, 8, 8), grd((res + 7) / 8, (res + 7) / 8, (res + 7) / 8);
-    voxelizeKernel << <grd, blk >> > (dG, res, minX, maxX, minY, maxY, minZ, maxZ, numTris,
-        d0x, d0y, d0z, d1x, d1y, d1z, d2x, d2y, d2z);
+    // 3) launch one thread per triangle
+    int threads = 128;
+    int blocks = (numTris + threads - 1) / threads;
+    triangleKernelAoS << <blocks, threads >> > (
+        d_grid, res,
+        minX, maxX,
+        minY, maxY,
+        minZ, maxZ,
+        numTris,
+        d_tris
+        );
     cudaDeviceSynchronize();
 
-    cudaMemcpy(outG, dG, voxB, cudaMemcpyDeviceToHost);
+    // 4) copy back crossing counts
+    cudaMemcpy(outGrid, d_grid, N * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 
-    cudaFree(dG);
-    cudaFree(d0x); cudaFree(d0y); cudaFree(d0z);
-    cudaFree(d1x); cudaFree(d1y); cudaFree(d1z);
-    cudaFree(d2x); cudaFree(d2y); cudaFree(d2z);
+    // 5) free GPU buffers
+    cudaFree(d_grid);
+    cudaFree(d_tris);
 }
