@@ -1,18 +1,18 @@
 ﻿  Compiling CUDA source file File.cu...
   
   D:\CIS660\CIS660_Maya_VoMoBo>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin\nvcc.exe" -gencode=arch=compute_52,code=\"sm_52,compute_52\" --use-local-env -ccbin "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64" -x cu   -ID:\MAYA\Maya2025\include -ID:\CIS660\CIS660_Maya_VoMoBo\libs -ID:\CIS660\CIS660_Maya_VoMoBo\libs\qpOASES\include -ID:\CIS660\CIS660_Maya_VoMoBo\libs\OpenMesh\src -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include"     --keep-dir VoMoBo\x64\Release  -maxrregcount=0   --machine 64 --compile -cudart static    -DNT_PLUGIN -Xcompiler "/EHsc /W3 /nologo /O2 /FS   /MD " -Xcompiler "/FdVoMoBo\x64\Release\vc143.pdb" -o D:\CIS660\CIS660_Maya_VoMoBo\VoMoBo\x64\Release\File.cu.obj "D:\CIS660\CIS660_Maya_VoMoBo\File.cu" 
-D:\CIS660\CIS660_Maya_VoMoBo\File.cu(291): warning #177-D: variable "half" was declared but never referenced
+D:\CIS660\CIS660_Maya_VoMoBo\File.cu(292): warning #177-D: variable "half" was declared but never referenced
             int half = twoi >> 1;
                 ^
   
   Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
   
   File.cu
-  tmpxft_0000bee0_00000000-7_File.cudafe1.cpp
-D:\CIS660\CIS660_Maya_VoMoBo\File.cu(169): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\CIS660\CIS660_Maya_VoMoBo\File.cu(348): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+  tmpxft_0000b8f4_00000000-7_File.cudafe1.cpp
+D:\CIS660\CIS660_Maya_VoMoBo\File.cu(170): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\CIS660\CIS660_Maya_VoMoBo\File.cu(349): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
   boundingProxy.cpp
-D:\CIS660\CIS660_Maya_VoMoBo\src\boundingProxy.cpp(170,23): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\CIS660\CIS660_Maya_VoMoBo\src\boundingProxy.cpp(169,23): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   brushContext.cpp
   MayaPlugin.cpp
      Creating library D:\CIS660\CIS660_Maya_VoMoBo\x64\Release\VoMoBo.lib and object D:\CIS660\CIS660_Maya_VoMoBo\x64\Release\VoMoBo.exp

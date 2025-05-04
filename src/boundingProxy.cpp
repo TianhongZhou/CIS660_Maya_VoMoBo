@@ -90,17 +90,16 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
         selectMesh();
 
         if (args.asString(2) == "cpu") {
+            
+            
+
 
             // Compute G
             voxelizationCPU(resolution);
             // Compute GHat
             pyramidGCPU();
             // Compute D
-
-            //GPU modify the S, so reinitialize the S everytime for convinence
-            editedS = false;
             dilationCPU(SE, baseScale);
-
             // Compute Dc
             connectedContourCPU(D);
             // Compute DcHat
@@ -122,9 +121,9 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             S.assign(resolution,
                 vector<vector<double>>(resolution,
                     vector<double>(resolution, baseScale)));
-            editedS = true;
+            //editedS = true;
 
-
+            // 1) Rasterize into flatI via your existing triangle kernel
             MPointArray verts;
             meshFn->getPoints(verts, MSpace::kWorld);
             MIntArray triCounts, triIdx;
@@ -181,7 +180,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
                 (bbMax.z - bbMin.z) / resolution
             );
 
-            // 4) build Boolean pyramid levels on GPU
+            // 4) build Boolean pyramid levels GH[0..iMax] on GPU
             int iMax = int(std::log2(double(resolution)));
             vector<vector<unsigned char>> GH(iMax + 1);
             GH[0] = std::move(flatG0);
@@ -210,8 +209,8 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
                 );
             }
 
-            // 6)dilation on GPU
-            vector<double> flatS(N, baseScale);     
+            // 6) full spatially‐varying dilation on GPU
+            vector<double> flatS(N, baseScale);      // world‐space radius
             vector<unsigned char> flatD(N);
             spatiallyVaryingDilationOnGpu(
                 GH[0].data(),
@@ -235,17 +234,28 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
                         D[x][y][z] = (flatD[idx] != 0);
                     }
 
-
-          
+            // 8) CPU‐side *connected contour* → Dc
             connectedContourCPU(D);
+            // 9) CPU‐side *scale‐augmented* pyramid → DcHat
             scaleAugmentedPyramidCPU();
+            // 10) CPU erosion on DcHat → E
             erosionCPU();
-            outputG = E;        
+            outputG = E;         // now a proper non‐empty 3D field
 
-          
+            // 11) March & simplify exactly as in your CPU path
             cubeMarching();
             simplifyMesh(maxError, simplifyMethod);
             createMayaMesh("final");
+
+
+
+            //connectedContourCPU(D);
+            //scaleAugmentedPyramidCPU();
+            ////erosionCPU();               // now safe: G, DcHat, S all correct
+            //outputG = E;
+            //cubeMarching();
+            //simplifyMesh(maxError, simplifyMethod);
+            //createMayaMesh("final");
 
         }
     }

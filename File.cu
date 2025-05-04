@@ -18,6 +18,7 @@ __device__ int clamp_idx(int v, int lo, int hi) {
     return v < lo ? lo : (v > hi ? hi : v);
 }
 
+// YZ‐plane inside‐triangle test using POD Triangle
 __device__ bool insideYZ(const GpuTriangle& T, double y, double z) {
     double y0 = T.v0y, z0 = T.v0z;
     double y1 = T.v1y, z1 = T.v1z;
@@ -29,7 +30,7 @@ __device__ bool insideYZ(const GpuTriangle& T, double y, double z) {
         || (w0 <= 0 && w1 <= 0 && w2 <= 0);
 }
 
-//triangle plane with ray at (y,z) → x
+// intersect triangle plane with ray at (y,z) → x
 __device__ bool intersectX(const GpuTriangle& T, double y, double z, double& xi) {
     double x0 = T.v0x, y0 = T.v0y, z0 = T.v0z;
     double x1 = T.v1x, y1 = T.v1y, z1 = T.v1z;
@@ -43,7 +44,7 @@ __device__ bool intersectX(const GpuTriangle& T, double y, double z, double& xi)
     return true;
 }
 
-//per triangle
+// One CUDA thread per triangle
 extern "C" __global__ void triangleKernelAoS(
     unsigned int* grid,
     int              res,
@@ -174,7 +175,7 @@ extern "C" void computePyramidLevelOnGpu(
     cudaFree(dCurr);
 }
 
-constexpr int MAX_LEVEL = 11;  //11 for up to 2048³
+constexpr int MAX_LEVEL = 11;  // log2(max resolution you support), e.g. 8→256³
 
 __device__ __forceinline__ size_t levelOffset(int lvl, int res) {
     size_t off = 0;
