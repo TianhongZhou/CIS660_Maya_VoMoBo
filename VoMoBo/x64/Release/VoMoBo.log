@@ -8,7 +8,7 @@ D:\CIS660\CIS660_Maya_VoMoBo\File.cu(292): warning #177-D: variable "half" was d
   Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
   
   File.cu
-  tmpxft_0000b8f4_00000000-7_File.cudafe1.cpp
+  tmpxft_0000a91c_00000000-7_File.cudafe1.cpp
 D:\CIS660\CIS660_Maya_VoMoBo\File.cu(170): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 D:\CIS660\CIS660_Maya_VoMoBo\File.cu(349): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
   boundingProxy.cpp

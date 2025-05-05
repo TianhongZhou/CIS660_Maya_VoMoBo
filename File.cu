@@ -175,7 +175,7 @@ extern "C" void computePyramidLevelOnGpu(
     cudaFree(dCurr);
 }
 
-constexpr int MAX_LEVEL = 11;  // log2(max resolution you support), e.g. 8→256³
+constexpr int MAX_LEVEL = 11;  
 
 __device__ __forceinline__ size_t levelOffset(int lvl, int res) {
     size_t off = 0;

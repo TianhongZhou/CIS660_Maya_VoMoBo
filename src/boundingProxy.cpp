@@ -210,7 +210,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             }
 
             // 6) full spatially‐varying dilation on GPU
-            vector<double> flatS(N, baseScale);      // world‐space radius
+            vector<double> flatS(N, baseScale);      
             vector<unsigned char> flatD(N);
             spatiallyVaryingDilationOnGpu(
                 GH[0].data(),
@@ -240,7 +240,7 @@ MStatus BoundingProxy::doIt(const MArgList& args) {
             scaleAugmentedPyramidCPU();
             // 10) CPU erosion on DcHat → E
             erosionCPU();
-            outputG = E;         // now a proper non‐empty 3D field
+            outputG = E;         
 
             // 11) March & simplify exactly as in your CPU path
             cubeMarching();
